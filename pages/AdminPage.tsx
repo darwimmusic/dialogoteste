@@ -12,11 +12,12 @@ import {
   getAllCourses,
   updateCourseFeaturedStatus
 } from '../services/adminService';
+import { addOrUpdateBadgeForCourse } from '../services/courseService'; // Importa a nova função
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 import type { Theme, Course, Lesson, Attachment } from '../types';
 
 // Para controlar qual formulário está visível
-type AdminView = 'theme' | 'course' | 'lesson' | 'manage_attachments' | 'manage_featured' | null;
+type AdminView = 'theme' | 'course' | 'lesson' | 'manage_attachments' | 'manage_featured' | 'manage_badges' | null;
 
 export const AdminPage: React.FC = () => {
   // Estado para controlar a visão atual
@@ -278,6 +279,20 @@ export const AdminPage: React.FC = () => {
         >
           Gerenciar Destaques
         </button>
+        <button 
+          onClick={async () => {
+            setView('manage_badges');
+            setIsLoading(true);
+            try {
+              const allCoursesData = await getAllCourses();
+              setAllCourses(allCoursesData);
+            } catch (err) { setError("Não foi possível carregar todos os cursos."); }
+            setIsLoading(false);
+          }} 
+          className="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded"
+        >
+          Gerenciar Badges
+        </button>
       </div>
 
       {error && <p className="text-red-400 text-sm p-3 bg-red-900/50 rounded-md">{error}</p>}
@@ -337,6 +352,59 @@ export const AdminPage: React.FC = () => {
                   <div className="w-11 h-6 bg-gray-600 rounded-full peer peer-focus:ring-4 peer-focus:ring-yellow-800 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
                 </label>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* LISTA DE CURSOS PARA GERENCIAR BADGES */}
+      {view === 'manage_badges' && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-white mb-2">Gerenciar Badges dos Cursos</h3>
+          <div className="space-y-4">
+            {allCourses.map(course => (
+              <form 
+                key={course.id} 
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  const target = e.target as typeof e.target & {
+                    badgeName: { value: string };
+                    badgeDesc: { value: string };
+                    badgeImg: { value: string };
+                  };
+                  const badgeData = {
+                    name: target.badgeName.value,
+                    description: target.badgeDesc.value,
+                    imageUrl: target.badgeImg.value,
+                  };
+                  if (!badgeData.name || !badgeData.description || !badgeData.imageUrl) {
+                    setError(`Preencha todos os campos da badge para "${course.title}".`);
+                    return;
+                  }
+                  setIsLoading(true);
+                  setError(null);
+                  setSuccess(null);
+                  try {
+                    await addOrUpdateBadgeForCourse(course.id, badgeData);
+                    setSuccess(`Badge do curso "${course.title}" salva com sucesso!`);
+                  } catch (err) {
+                    setError((err as Error).message);
+                  } finally {
+                    setIsLoading(false);
+                  }
+                }}
+                className="p-4 bg-gray-700 rounded-md"
+              >
+                <p className="font-bold text-white">{course.title}</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                  <input name="badgeName" defaultValue={course.badge?.name} placeholder="Nome da Badge" className="bg-gray-600 rounded py-1 px-2 text-white" />
+                  <input name="badgeDesc" defaultValue={course.badge?.description} placeholder="Descrição" className="bg-gray-600 rounded py-1 px-2 text-white" />
+                  <input name="badgeImg" defaultValue={course.badge?.imageUrl} placeholder="URL da Imagem" className="bg-gray-600 rounded py-1 px-2 text-white" />
+                </div>
+                <button type="submit" disabled={isLoading} className="mt-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-1 px-3 rounded text-sm">
+                  {isLoading ? <LoadingSpinner /> : 'Salvar Badge'}
+                </button>
+              </form>
             ))}
           </div>
         </div>

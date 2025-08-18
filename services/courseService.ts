@@ -2,7 +2,7 @@
 
 import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from './firebase';
-import type { Theme, Course, Lesson } from '../types';
+import type { Theme, Course, Lesson, Badge } from '../types';
 
 export const getFeaturedCourses = async (): Promise<Course[]> => {
   try {
@@ -65,4 +65,33 @@ export const getCourseWithLessons = async (courseId: string): Promise<Course | n
         console.error("Erro ao buscar curso com aulas: ", error);
         throw new Error("Não foi possível carregar os dados do curso.");
     }
+};
+
+/**
+ * Adiciona ou atualiza a badge de um curso específico.
+ * @param courseId O ID do curso a ser atualizado.
+ * @param badgeData Os dados da badge (nome, descrição, imageUrl).
+ */
+export const addOrUpdateBadgeForCourse = async (courseId: string, badgeData: Omit<Badge, 'id'>): Promise<void> => {
+  const courseRef = doc(db, `courses/${courseId}`);
+  try {
+    // Criamos um ID único para a badge para consistência
+    const badgeId = `badge_${courseId}`;
+    const newBadge: Badge = { id: badgeId, ...badgeData };
+
+    // Converte para um objeto JavaScript puro para garantir a serialização correta
+    const plainBadgeObject = {
+      id: newBadge.id,
+      name: newBadge.name,
+      description: newBadge.description,
+      imageUrl: newBadge.imageUrl,
+    };
+    
+    await updateDoc(courseRef, {
+      badge: plainBadgeObject
+    });
+  } catch (error) {
+    console.error("Erro ao adicionar/atualizar a badge do curso: ", error);
+    throw new Error("Não foi possível salvar a badge do curso.");
+  }
 };

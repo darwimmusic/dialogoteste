@@ -11,7 +11,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
-import type { UserProfile } from "../types";
+import type { UserProfile, Course } from "../types";
 
 const db = getFirestore();
 const storage = getStorage();
@@ -161,5 +161,38 @@ export const uploadProfilePicture = async (uid: string, file: File): Promise<str
   } catch (error) {
     console.error("Error uploading profile picture: ", error);
     throw new Error("Falha ao carregar a imagem de perfil.");
+  }
+};
+
+/**
+ * Concede a badge de um curso a um usuário se ele ainda não a tiver.
+ * Chamado após o usuário completar a última aula de um curso.
+ * @param uid O ID do usuário.
+ * @param courseId O ID do curso concluído.
+ */
+export const awardBadgeIfCourseCompleted = async (uid: string, courseId: string): Promise<void> => {
+  const courseRef = doc(db, `courses/${courseId}`);
+  const userRef = doc(db, `users/${uid}`);
+
+  try {
+    const [courseSnap, userSnap] = await Promise.all([getDoc(courseRef), getDoc(userRef)]);
+
+    if (!courseSnap.exists() || !userSnap.exists()) {
+      console.warn("Curso ou usuário não encontrado.");
+      return;
+    }
+
+    const course = courseSnap.data() as Course;
+    const userProfile = userSnap.data() as UserProfile;
+
+    // Verifica se o curso tem uma badge e se o usuário já não a possui
+    if (course.badge && !userProfile.badges?.some(b => b.id === course.badge!.id)) {
+      const updatedBadges = [...(userProfile.badges || []), course.badge];
+      await updateDoc(userRef, { badges: updatedBadges });
+      console.log(`Badge "${course.badge.name}" concedida ao usuário ${uid}.`);
+    }
+  } catch (error) {
+    console.error("Erro ao conceder a badge: ", error);
+    // Não lançamos o erro para não interromper o fluxo do usuário
   }
 };

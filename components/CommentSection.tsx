@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { addComment, getCommentsForPost } from '../services/forumService';
+import { addComment, getCommentsForPost, deleteComment } from '../services/forumService';
 import { getUserProfile } from '../services/userService';
 import type { ForumComment, UserProfile } from '../types';
 import { LoadingSpinner } from './icons/LoadingSpinner';
@@ -20,7 +20,7 @@ interface CommentProps {
 const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) => {
   const [showReply, setShowReply] = useState(false);
   const [replyContent, setReplyContent] = useState('');
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   const handleAddReply = async () => {
     if (!user || !replyContent.trim()) return;
@@ -35,12 +35,35 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
     onReplySuccess(); // Notifica o componente pai para recarregar os comentários
   };
 
+  const handleDelete = async () => {
+    if (window.confirm('Tem certeza que deseja excluir este comentário?')) {
+      try {
+        await deleteComment(postId, comment.id);
+        onReplySuccess(); // Recarrega os comentários para refletir a exclusão
+      } catch (error) {
+        console.error("Falha ao excluir comentário:", error);
+        // Opcional: mostrar um erro para o usuário
+      }
+    }
+  };
+
   return (
     <div className="ml-4 pl-4 border-l-2 border-gray-700">
       <div className="flex items-start space-x-3">
         <img src={comment.author?.photoURL || 'https://via.placeholder.com/150'} alt="avatar" className="w-8 h-8 rounded-full" />
         <div className="flex-1">
-          <p className="font-semibold text-sm text-white">{comment.author?.displayName}</p>
+          <div className="flex justify-between items-center">
+            <p className="font-semibold text-sm text-white">{comment.author?.displayName}</p>
+            {user && (user.uid === comment.authorId || isAdmin) && (
+              <button 
+                onClick={handleDelete} 
+                className="text-xs text-red-400 hover:text-red-300"
+                title="Excluir comentário"
+              >
+                Excluir
+              </button>
+            )}
+          </div>
           <div className="prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: comment.content }} />
           <button onClick={() => setShowReply(!showReply)} className="text-xs text-blue-400 mt-1">Responder</button>
         </div>

@@ -131,3 +131,45 @@ export const getCommentsForPost = async (postId: string): Promise<(ForumComment 
     throw new Error("Não foi possível carregar os comentários.");
   }
 };
+
+/**
+ * Deleta um comentário específico.
+ * @param postId O ID do post pai do comentário.
+ * @param commentId O ID do comentário a ser deletado.
+ */
+export const deleteComment = async (postId: string, commentId: string): Promise<void> => {
+  try {
+    const commentRef = doc(db, `posts/${postId}/comments`, commentId);
+    await deleteDoc(commentRef);
+    // Decrementa a contagem de comentários no post
+    const postRef = doc(db, "posts", postId);
+    await updateDoc(postRef, { commentCount: increment(-1) });
+  } catch (error) {
+    console.error("Erro ao deletar comentário: ", error);
+    throw new Error("Não foi possível deletar o comentário.");
+  }
+};
+
+/**
+ * Deleta um post e todos os seus comentários.
+ * @param postId O ID do post a ser deletado.
+ */
+export const deletePost = async (postId: string): Promise<void> => {
+  try {
+    const commentsCollection = collection(db, `posts/${postId}/comments`);
+    const commentsSnapshot = await getDocs(commentsCollection);
+    
+    // Deleta todos os comentários em paralelo
+    const deletePromises = commentsSnapshot.docs.map(commentDoc => 
+      deleteDoc(doc(db, `posts/${postId}/comments`, commentDoc.id))
+    );
+    await Promise.all(deletePromises);
+
+    // Deleta o post principal
+    const postRef = doc(db, "posts", postId);
+    await deleteDoc(postRef);
+  } catch (error) {
+    console.error("Erro ao deletar o post: ", error);
+    throw new Error("Não foi possível deletar o post e seus comentários.");
+  }
+};

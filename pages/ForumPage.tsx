@@ -1,18 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { getPosts } from '../services/forumService';
+import { getPosts, getPostsByAuthor } from '../services/forumService';
 import type { ForumPost } from '../types';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 export const ForumPage: React.FC = () => {
   const [posts, setPosts] = useState<(ForumPost & { id: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+
+  const [filter, setFilter] = useState<'all' | 'my-posts'>(searchParams.get('filter') === 'my-posts' ? 'my-posts' : 'all');
 
   useEffect(() => {
     const fetchPosts = async () => {
+      setIsLoading(true);
+      setError(null);
       try {
-        const fetchedPosts = await getPosts();
+        let fetchedPosts;
+        if (filter === 'my-posts' && user) {
+          fetchedPosts = await getPostsByAuthor(user.uid);
+        } else {
+          fetchedPosts = await getPosts();
+        }
         setPosts(fetchedPosts);
       } catch (err) {
         setError("Não foi possível carregar os posts.");
@@ -21,7 +33,7 @@ export const ForumPage: React.FC = () => {
       }
     };
     fetchPosts();
-  }, []);
+  }, [filter, user]);
 
   if (isLoading) {
     return <div className="flex justify-center items-center h-screen"><LoadingSpinner /></div>;
@@ -36,6 +48,21 @@ export const ForumPage: React.FC = () => {
             Criar Novo Post
           </button>
         </Link>
+      </div>
+
+      <div className="flex items-center space-x-4 mb-6 border-b border-gray-700 pb-4">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+        >
+          Todos os Posts
+        </button>
+        <button
+          onClick={() => setFilter('my-posts')}
+          className={`px-4 py-2 rounded-md ${filter === 'my-posts' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+        >
+          Meus Posts
+        </button>
       </div>
 
       {error && <p className="text-red-400 mb-4">{error}</p>}

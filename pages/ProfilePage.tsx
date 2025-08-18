@@ -158,7 +158,7 @@ const ProfilePage: React.FC = () => {
           <h2 className="text-2xl font-bold mb-4 text-white">Meus Posts no Fórum</h2>
           <div className="space-y-4">
             {userPosts.length > 0 ? (
-              userPosts.map(post => (
+              userPosts.slice(0, 5).map(post => (
                 <div key={post.id} className="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-colors">
                   <Link to={`/forum/post/${post.id}`} className="block">
                     <h3 className="text-lg font-semibold text-blue-400">{post.title}</h3>
@@ -174,6 +174,15 @@ const ProfilePage: React.FC = () => {
                 <Link to="/forum">
                   <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded">
                     CRIAR MEU PRIMEIRO POST
+                  </button>
+                </Link>
+              </div>
+            )}
+            {userPosts.length > 5 && (
+              <div className="text-center mt-4">
+                <Link to={`/forum?filter=my-posts&authorId=${user?.uid}`}>
+                  <button className="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded">
+                    Ver todos os posts
                   </button>
                 </Link>
               </div>

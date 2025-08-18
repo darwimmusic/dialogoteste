@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.14.0",
+    "@tiptap/extension-image": "^3.2.0",
     "@tiptap/pm": "^3.2.0",
     "@tiptap/react": "^3.2.0",
     "@tiptap/starter-kit": "^3.2.0",

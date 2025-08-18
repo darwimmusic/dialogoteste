@@ -1,6 +1,7 @@
 import React from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Image from '@tiptap/extension-image';
 
 interface TiptapEditorProps {
   content: string;
@@ -12,6 +13,13 @@ const MenuBar: React.FC<{ editor: any }> = ({ editor }) => {
     return null;
   }
 
+  const addImage = () => {
+    const url = window.prompt('URL da Imagem:');
+    if (url) {
+      editor.chain().focus().setImage({ src: url }).run();
+    }
+  };
+
   return (
     <div className="bg-gray-700 p-2 rounded-t-lg flex flex-wrap gap-2">
       <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive('bold') ? 'is-active' : ''}>Bold</button>
@@ -22,13 +30,14 @@ const MenuBar: React.FC<{ editor: any }> = ({ editor }) => {
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}>H2</button>
       <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive('bulletList') ? 'is-active' : ''}>Bullet List</button>
       <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive('orderedList') ? 'is-active' : ''}>Ordered List</button>
+      <button type="button" onClick={addImage}>Add Image</button>
     </div>
   );
 };
 
 export const TiptapEditor: React.FC<TiptapEditorProps> = ({ content, onChange }) => {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, Image],
     content: content,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());

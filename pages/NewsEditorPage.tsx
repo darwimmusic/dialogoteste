@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { TiptapEditor } from '../components/TiptapEditor';
-import { createNewsArticle, getNewsArticleById, updateNewsArticle, uploadNewsMedia } from '../services/newsService';
+import { createNewsArticle, getNewsArticleById, updateNewsArticle } from '../services/newsService';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 
 export const NewsEditorPage: React.FC = () => {
@@ -12,7 +12,6 @@ export const NewsEditorPage: React.FC = () => {
 
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [coverImageUrl, setCoverImageUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,20 +36,14 @@ export const NewsEditorPage: React.FC = () => {
     }
   }, [newsId, isEditing]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setCoverImageFile(e.target.files[0]);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !isAdmin) {
       setError('Você não tem permissão para realizar esta ação.');
       return;
     }
-    if (!title.trim() || !content.trim()) {
-      setError('Título e conteúdo são obrigatórios.');
+    if (!title.trim() || !content.trim() || !coverImageUrl.trim()) {
+      setError('Título, conteúdo e URL da imagem de capa são obrigatórios.');
       return;
     }
 
@@ -58,28 +51,18 @@ export const NewsEditorPage: React.FC = () => {
     setError(null);
 
     try {
-      let finalCoverImageUrl = coverImageUrl;
+      const articleData = {
+        title,
+        content,
+        coverImageUrl,
+        authorId: user.uid,
+      };
 
       if (isEditing && newsId) {
-        // Se estiver editando e uma nova imagem for selecionada
-        if (coverImageFile) {
-          finalCoverImageUrl = await uploadNewsMedia(newsId, coverImageFile);
-        }
-        await updateNewsArticle(newsId, { title, content, coverImageUrl: finalCoverImageUrl, authorId: user.uid });
+        await updateNewsArticle(newsId, articleData);
         navigate(`/news/${newsId}`);
       } else {
-        // Se estiver criando um novo artigo
-        if (!coverImageFile) {
-          setError('Uma imagem de capa é obrigatória.');
-          setIsLoading(false);
-          return;
-        }
-        // Primeiro, cria o artigo para obter um ID
-        const newArticleId = await createNewsArticle({ title, content, coverImageUrl: '', authorId: user.uid });
-        // Depois, faz o upload da imagem com o ID obtido
-        finalCoverImageUrl = await uploadNewsMedia(newArticleId, coverImageFile);
-        // Finalmente, atualiza o artigo com a URL da imagem
-        await updateNewsArticle(newArticleId, { coverImageUrl: finalCoverImageUrl });
+        const newArticleId = await createNewsArticle(articleData);
         navigate(`/news/${newArticleId}`);
       }
     } catch (err) {
@@ -113,16 +96,17 @@ export const NewsEditorPage: React.FC = () => {
           />
         </div>
         <div>
-          <label htmlFor="coverImage" className="block text-lg font-medium text-gray-300 mb-2">Imagem de Capa</label>
+          <label htmlFor="coverImageUrl" className="block text-lg font-medium text-gray-300 mb-2">URL da Imagem de Capa</label>
           <input
-            id="coverImage"
-            type="file"
-            onChange={handleFileChange}
-            accept="image/*"
-            className="w-full text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-500"
+            id="coverImageUrl"
+            type="text"
+            value={coverImageUrl}
+            onChange={(e) => setCoverImageUrl(e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-md p-3 text-white focus:ring-2 focus:ring-blue-500"
+            placeholder="https://exemplo.com/imagem.jpg"
           />
-          {coverImageUrl && !coverImageFile && (
-            <img src={coverImageUrl} alt="Capa atual" className="mt-4 w-full max-w-xs rounded-md" />
+          {coverImageUrl && (
+            <img src={coverImageUrl} alt="Pré-visualização da capa" className="mt-4 w-full max-w-xs rounded-md" />
           )}
         </div>
         <div>

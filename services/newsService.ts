@@ -17,29 +17,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db } from './firebase';
 import type { NewsArticle } from '../types';
 
-const storage = getStorage();
 const newsCollection = collection(db, 'news');
-
-/**
- * Faz o upload de uma imagem ou vídeo para uma notícia específica.
- * @param newsId O ID da notícia.
- * @param file O arquivo de mídia a ser carregado.
- * @returns A URL de download da mídia.
- */
-export const uploadNewsMedia = async (newsId: string, file: File): Promise<string> => {
-  if (!file) throw new Error('Nenhum arquivo fornecido.');
-
-  const filePath = `admin_content/NEWS/${newsId}/${file.name}`;
-  const storageRef = ref(storage, filePath);
-
-  try {
-    const snapshot = await uploadBytes(storageRef, file);
-    return await getDownloadURL(snapshot.ref);
-  } catch (error) {
-    console.error('Error uploading news media:', error);
-    throw new Error('Falha ao carregar a mídia da notícia.');
-  }
-};
 
 /**
  * Cria um novo artigo de notícia.

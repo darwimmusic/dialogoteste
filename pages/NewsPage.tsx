@@ -9,16 +9,16 @@ import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 export const NewsPage: React.FC = () => {
   const [articles, setArticles] = useState<(NewsArticle & { id: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'createdAt' | 'likes'>('createdAt');
   const { isAdmin } = useAuth();
 
   useEffect(() => {
     setIsLoading(true);
-    getNewsArticles(sortBy)
+    // Ordena sempre por data de criação, conforme solicitado
+    getNewsArticles('createdAt')
       .then(setArticles)
       .catch(error => console.error("Failed to fetch news:", error))
       .finally(() => setIsLoading(false));
-  }, [sortBy]);
+  }, []);
 
   return (
     <div className="container mx-auto p-4 md:p-8">
@@ -33,34 +33,21 @@ export const NewsPage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex items-center space-x-4 mb-6">
-        <span className="text-gray-400">Ordenar por:</span>
-        <button
-          onClick={() => setSortBy('createdAt')}
-          className={`px-4 py-2 rounded-md ${sortBy === 'createdAt' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-        >
-          Mais Recentes
-        </button>
-        <button
-          onClick={() => setSortBy('likes')}
-          className={`px-4 py-2 rounded-md ${sortBy === 'likes' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
-        >
-          Mais Populares
-        </button>
-      </div>
-
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner className="h-8 w-8" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col space-y-6">
           {articles.map(article => (
-            <Link to={`/news/${article.id}`} key={article.id} className="bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-blue-500/50 transition-shadow duration-300">
-              <img src={article.coverImageUrl} alt={article.title} className="w-full h-48 object-cover" />
-              <div className="p-4">
-                <h2 className="text-xl font-bold text-white mb-2">{article.title}</h2>
-                <div className="flex justify-between items-center text-sm text-gray-400">
+            <Link to={`/news/${article.id}`} key={article.id} className="flex bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-blue-500/50 transition-shadow duration-300 w-full">
+              <img src={article.coverImageUrl} alt={article.title} className="w-1/3 h-auto object-cover hidden md:block" />
+              <div className="p-6 flex flex-col justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold text-white mb-2">{article.title}</h2>
+                  {/* Opcional: Adicionar um resumo do conteúdo aqui se desejar */}
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-400 mt-4">
                   <span>{new Date(article.createdAt?.toDate()).toLocaleDateString()}</span>
                   <span>❤️ {article.likes}</span>
                 </div>

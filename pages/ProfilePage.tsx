@@ -1,63 +1,97 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { signOutUser } from '../services/authService';
-import { UserIcon } from '../components/icons/UserIcon';
+import { getUserProfile } from '../services/userService';
+import type { UserProfile } from '../types';
+import { LoadingPage } from './LoadingPage';
 
-interface ProfilePageProps {
-  navigateToDashboard: () => void;
-}
-
-export const ProfilePage: React.FC<ProfilePageProps> = ({ navigateToDashboard }) => {
+const ProfilePage: React.FC = () => {
   const { user } = useAuth();
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const handleSignOut = async () => {
-    try {
-      await signOutUser();
-      // The auth state change will automatically redirect the user to the LoginPage.
-      // But if we want to ensure they are on the dashboard before that happens:
-      navigateToDashboard();
-    } catch (error) {
-      console.error(error);
-      alert("Falha ao sair. Por favor, tente novamente.");
-    }
-  };
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user) {
+        try {
+          const profile = await getUserProfile(user.uid);
+          setUserProfile(profile);
+        } catch (error) {
+          console.error("Erro ao buscar perfil do usuário:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setLoading(false);
+      }
+    };
 
-  if (!user) {
-    return (
-      <div className="container mx-auto p-8 text-center">
-        <p className="text-gray-400">Carregando perfil...</p>
-      </div>
-    );
+    fetchUserProfile();
+  }, [user]);
+
+  if (loading) {
+    return <LoadingPage />;
   }
 
-  return (
-    <div className="container mx-auto max-w-2xl p-8">
-      <div className="bg-gray-800/50 rounded-lg p-8 ring-1 ring-gray-700 shadow-xl">
-        <div className="flex flex-col items-center">
-          {user.photoURL ? (
-            <img
-              className="h-24 w-24 rounded-full ring-4 ring-blue-500 mb-4"
-              src={user.photoURL}
-              alt="Foto do perfil"
-            />
-          ) : (
-             <div className="h-24 w-24 rounded-full ring-4 ring-blue-500 bg-gray-600 flex items-center justify-center mb-4">
-                <UserIcon className="w-12 h-12 text-gray-400" />
-            </div>
-          )}
-          <h1 className="text-3xl font-bold text-white">{user.displayName || 'Usuário'}</h1>
-          <p className="text-md text-gray-400 mt-1">{user.email}</p>
-          
-          <div className="w-full border-t border-gray-700 my-8"></div>
+  if (!userProfile) {
+    return <div className="container mx-auto p-4">Usuário não encontrado ou não logado.</div>;
+  }
 
-          <button
-            onClick={handleSignOut}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-red-500"
-          >
-            Sair (Logout)
-          </button>
+  // Barra de progresso de XP
+  const xpProgress = (userProfile.xp % 100);
+
+  return (
+    <div className="bg-gray-100 min-h-screen">
+      <div className="container mx-auto p-4 md:p-8">
+        
+        {/* Seção Superior do Perfil */}
+        <div className="bg-white rounded-lg shadow-md p-6 flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
+          <img 
+            src={userProfile.photoURL || 'https://via.placeholder.com/150'} 
+            alt="Foto do Perfil" 
+            className="w-32 h-32 rounded-full border-4 border-blue-500 object-cover"
+          />
+          <div className="flex-grow text-center md:text-left">
+            <h1 className="text-3xl font-bold">{userProfile.displayName}</h1>
+            <p className="text-lg text-gray-600">{userProfile.title}</p>
+            <div className="mt-2">
+              <span className="font-semibold">LVL: {userProfile.level}</span>
+              <div className="w-full bg-gray-200 rounded-full h-4 mt-1">
+                <div 
+                  className="bg-blue-500 h-4 rounded-full" 
+                  style={{ width: `${xpProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-right">{userProfile.xp % 100} / 100 XP</p>
+            </div>
+          </div>
+          <div className="text-center md:text-right">
+            {/* Aqui podem entrar botões de editar perfil, etc. */}
+            <p className="text-gray-500">Membro desde: {new Date(userProfile.createdAt?.toDate()).toLocaleDateString()}</p>
+          </div>
         </div>
+
+        {/* Seção de Conquistas/Badges */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Conquistas</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {userProfile.badges.length > 0 ? (
+              userProfile.badges.map(badge => (
+                <div key={badge.id} className="bg-white p-4 rounded-lg shadow-md text-center">
+                  <img src={badge.imageUrl} alt={badge.name} className="w-20 h-20 mx-auto"/>
+                  <p className="mt-2 font-semibold">{badge.name}</p>
+                </div>
+              ))
+            ) : (
+              <p>Nenhuma conquista ainda.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Outras seções (Cursos, Blog, etc.) podem ser adicionadas aqui */}
+
       </div>
     </div>
   );
 };
+
+export default ProfilePage;

@@ -2,18 +2,22 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { getCourseWithLessons } from '../services/courseService';
+import { getCourseWithLessons, updateLessonSummary } from '../services/courseService';
+import { generateLessonSummary } from '../services/geminiService';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { TranscriptViewer } from '../components/TranscriptViewer';
 import { AiTutorChat } from '../components/AiTutorChat';
+import { LessonAttachments } from '../components/LessonAttachments';
 import type { Course, Lesson } from '../types';
 
 export const LessonPlayerPage: React.FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const [course, setCourse] = useState<Course | null>(null);
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [lessonSummary, setLessonSummary] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
 
   useEffect(() => {
     if (!courseId) return;
@@ -21,9 +25,8 @@ export const LessonPlayerPage: React.FC = () => {
       try {
         const courseData = await getCourseWithLessons(courseId);
         setCourse(courseData);
-        // Define a primeira aula como a aula atual por padrão
-        if (courseData && courseData.lessons && courseData.lessons.length > 0) {
-          setCurrentLesson(courseData.lessons[0]);
+        if (courseData?.lessons?.[0]) {
+          handleLessonClick(courseData.lessons[0]);
         }
       } catch (error) {
         console.error(error);
@@ -33,6 +36,35 @@ export const LessonPlayerPage: React.FC = () => {
     };
     fetchCourseData();
   }, [courseId]);
+
+  const handleLessonClick = async (lesson: Lesson) => {
+    setCurrentLesson(lesson);
+    setIsSummaryLoading(true);
+    setLessonSummary('');
+
+    // Lógica de Cache:
+    // 1. Se o resumo já existir na aula, use-o.
+    if (lesson.summary) {
+      setLessonSummary(lesson.summary);
+      setIsSummaryLoading(false);
+      return;
+    }
+
+    // 2. Se não existir, gere um novo, exiba e salve no banco de dados.
+    try {
+      const newSummary = await generateLessonSummary(lesson.transcript);
+      setLessonSummary(newSummary);
+      // Salva o novo resumo no Firestore em segundo plano.
+      if (courseId && lesson.id) {
+        await updateLessonSummary(courseId, lesson.id, newSummary);
+      }
+    } catch (error) {
+      console.error("Falha ao gerar resumo, exibindo transcrição original.", error);
+      setLessonSummary(lesson.transcript); // Fallback para a transcrição original
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
 
   if (isLoading) return <div className="flex justify-center items-center h-screen"><LoadingSpinner /></div>;
   if (!course) return <div className="text-center p-8">Curso não encontrado.</div>;
@@ -49,7 +81,7 @@ export const LessonPlayerPage: React.FC = () => {
            <AiTutorChat transcript={currentLesson.transcript} />
         </div>
         
-        {/* Coluna Lateral: Playlist e Transcrição */}
+        {/* Coluna Lateral: Playlist, Conteúdo e Resumo */}
         <div className="lg:col-span-1 space-y-6">
             {/* Playlist */}
             <div className="bg-gray-800/50 p-4 rounded-lg">
@@ -57,8 +89,8 @@ export const LessonPlayerPage: React.FC = () => {
                 <ul className="space-y-2 max-h-96 overflow-y-auto">
                     {course.lessons?.map((lesson, index) => (
                         <li key={lesson.id}>
-                            <button 
-                                onClick={() => setCurrentLesson(lesson)}
+                            <button
+                                onClick={() => handleLessonClick(lesson)}
                                 className={`w-full text-left p-3 rounded-md transition-colors ${currentLesson.id === lesson.id ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`}
                             >
                                 <span className="font-medium">Aula {index + 1}: {lesson.title}</span>
@@ -67,8 +99,24 @@ export const LessonPlayerPage: React.FC = () => {
                     ))}
                 </ul>
             </div>
-            {/* Transcrição */}
-            <TranscriptViewer transcript={currentLesson.transcript} />
+
+            {/* Conteúdo da Aula (Anexos) */}
+            {currentLesson.attachments && currentLesson.attachments.length > 0 && (
+              <LessonAttachments attachments={currentLesson.attachments} />
+            )}
+
+            {/* Resumo da Aula */}
+            {isSummaryLoading ? (
+              <div className="bg-gray-800/50 p-4 rounded-lg flex justify-center items-center h-48">
+                <LoadingSpinner />
+              </div>
+            ) : (
+              <TranscriptViewer
+                summary={lessonSummary}
+                rawTranscript={currentLesson.transcript}
+                lessonTitle={currentLesson.title}
+              />
+            )}
         </div>
       </div>
     </div>

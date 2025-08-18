@@ -1,8 +1,31 @@
 // src/services/courseService.ts - Versão Final
 
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, updateDoc, query, where } from "firebase/firestore";
 import { db } from './firebase';
 import type { Theme, Course, Lesson } from '../types';
+
+export const getFeaturedCourses = async (): Promise<Course[]> => {
+  try {
+    const coursesCollection = collection(db, "courses");
+    const q = query(coursesCollection, where("isFeatured", "==", true));
+    const courseSnapshot = await getDocs(q);
+    return courseSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+  } catch (error) {
+    console.error("Erro ao buscar cursos em destaque: ", error);
+    throw new Error("Não foi possível carregar os cursos em destaque.");
+  }
+};
+
+export const updateLessonSummary = async (courseId: string, lessonId: string, summary: string): Promise<void> => {
+  try {
+    const lessonRef = doc(db, "courses", courseId, "lessons", lessonId);
+    await updateDoc(lessonRef, { summary });
+  } catch (error) {
+    console.error("Erro ao salvar o resumo da aula:", error);
+    // Não lançamos o erro para não quebrar a experiência do usuário se o salvamento falhar.
+    // O resumo ainda será exibido, apenas não será salvo para a próxima vez.
+  }
+};
 
 export const getFullContentHierarchy = async (): Promise<Theme[]> => {
   try {

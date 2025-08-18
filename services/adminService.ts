@@ -6,10 +6,12 @@ import {
   getDocs, 
   serverTimestamp, 
   query, 
-  where 
+  where,
+  doc,
+  updateDoc
 } from "firebase/firestore"; 
 import { db } from './firebase';
-import type { Theme, Course, Lesson } from '../types';
+import type { Theme, Course, Lesson, Attachment } from '../types';
 
 // Interfaces para os dados de entrada
 export interface ThemeInput {
@@ -28,6 +30,7 @@ export interface LessonInput {
     title: string;
     videoUrl: string;
     transcript: string;
+    attachments?: Attachment[];
 }
 
 // --- Funções de Leitura (GET) ---
@@ -55,7 +58,29 @@ export const getCoursesForTheme = async (themeId: string): Promise<(Course & { i
     }
 };
 
-// --- Funções de Escrita (CREATE) ---
+export const getLessonsForCourse = async (courseId: string): Promise<(Lesson & { id: string })[]> => {
+    try {
+        const lessonsCollection = collection(db, "courses", courseId, "lessons");
+        const lessonSnapshot = await getDocs(lessonsCollection);
+        return lessonSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lesson & { id: string }));
+    } catch (error) {
+        console.error("Erro ao buscar aulas para o curso: ", error);
+        throw new Error("Não foi possível buscar as aulas.");
+    }
+};
+
+export const getAllCourses = async (): Promise<(Course & { id: string })[]> => {
+    try {
+        const coursesCollection = collection(db, "courses");
+        const courseSnapshot = await getDocs(coursesCollection);
+        return courseSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course & { id: string }));
+    } catch (error) {
+        console.error("Erro ao buscar todos os cursos: ", error);
+        throw new Error("Não foi possível buscar todos os cursos.");
+    }
+};
+
+// --- Funções de Escrita (CREATE / UPDATE) ---
 
 export const createTheme = async (themeData: ThemeInput): Promise<void> => {
   try {
@@ -93,5 +118,25 @@ export const createLesson = async (courseId: string, lessonData: LessonInput): P
     } catch (error) {
         console.error("Erro ao criar aula: ", error);
         throw new Error("Não foi possível criar a aula.");
+    }
+};
+
+export const updateLessonAttachments = async (courseId: string, lessonId: string, attachments: Attachment[]): Promise<void> => {
+    try {
+        const lessonRef = doc(db, "courses", courseId, "lessons", lessonId);
+        await updateDoc(lessonRef, { attachments });
+    } catch (error) {
+        console.error("Erro ao atualizar anexos da aula: ", error);
+        throw new Error("Não foi possível salvar os anexos da aula.");
+    }
+};
+
+export const updateCourseFeaturedStatus = async (courseId: string, isFeatured: boolean): Promise<void> => {
+    try {
+        const courseRef = doc(db, "courses", courseId);
+        await updateDoc(courseRef, { isFeatured });
+    } catch (error) {
+        console.error("Erro ao atualizar o status de destaque do curso: ", error);
+        throw new Error("Não foi possível atualizar o status de destaque.");
     }
 };

@@ -8,7 +8,7 @@ import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ForumPage } from './pages/ForumPage';
 import { LiveSessionsPage } from './pages/LiveSessionsPage';
 import { NewsPage } from './pages/NewsPage';
-import { ProfilePage } from './pages/ProfilePage';
+import ProfilePage from './pages/ProfilePage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminPage } from './pages/AdminPage';
 import { useAuth } from './hooks/useAuth';

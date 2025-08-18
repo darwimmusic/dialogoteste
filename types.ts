@@ -1,7 +1,38 @@
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+}
+
+export interface UserProfile {
+  uid: string;
+  displayName: string;
+  email: string;
+  photoURL?: string;
+  firstName?: string;
+  lastName?: string;
+  age?: number;
+  area?: string;
+  companyName?: string;
+  tags?: [string, string, string];
+  xp: number;
+  level: number;
+  title: string;
+  completedCourses: string[];
+  badges: Badge[];
+  isAdmin: boolean;
+  createdAt: any; // ou um tipo mais específico se você usar Timestamps
+}
 
 export interface ChatMessage {
   role: 'user' | 'model';
   content: string;
+}
+
+export interface Attachment {
+  name: string;
+  url: string;
 }
 
 export interface Lesson {
@@ -10,6 +41,8 @@ export interface Lesson {
   themeTitle: string;
   videoUrl: string;
   transcript: string;
+  attachments?: Attachment[];
+  summary?: string;
 }
 
 export interface Course {
@@ -17,7 +50,10 @@ export interface Course {
   title: string;
   description: string;
   coverImageUrl: string;
+  themeId: string;
   lessons: Lesson[];
+  isFeatured?: boolean;
+  badge?: Badge;
 }
 
 export interface Theme {

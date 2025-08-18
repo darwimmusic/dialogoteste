@@ -17,6 +17,7 @@ import {
 } from "firebase/firestore";
 import { auth, googleProvider } from './firebase';
 import type { User } from "firebase/auth";
+import type { UserProfile } from "../types";
 
 const db = getFirestore();
 
@@ -37,15 +38,21 @@ export const createUserProfileDocument = async (user: User, additionalData: { di
     const createdAt = serverTimestamp();
 
     try {
-      await setDoc(userRef, {
+      const newUserProfile: UserProfile = {
         uid,
-        displayName,
-        email,
-        photoURL,
+        displayName: displayName || 'Novo Usuário',
+        email: email || '',
+        photoURL: photoURL || '',
         createdAt,
-        // Por padrão, novos usuários não são administradores
-        isAdmin: false 
-      });
+        isAdmin: false,
+        xp: 0,
+        level: 1,
+        title: 'Rookie',
+        completedCourses: [],
+        badges: [],
+      };
+
+      await setDoc(userRef, newUserProfile);
 
       // Atualiza também o perfil do Firebase Auth com o nome de exibição
       if (displayName) {

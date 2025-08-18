@@ -127,16 +127,18 @@ const ProfilePage: React.FC = () => {
               <p className="text-sm text-right text-gray-400">{userProfile.xp % 100} / 100 XP</p>
             </div>
           </div>
-          <div className="text-center md:text-right">
-            <p className="text-lg font-semibold text-gray-200">{userProfile.title}</p>
-            {userProfile.titleBadgeUrl && (
+          <div className="flex flex-col items-center">
+            {userProfile.titleBadgeUrl ? (
               <img 
                 src={userProfile.titleBadgeUrl} 
                 alt={`Badge para ${userProfile.title}`}
-                className="w-16 h-16 mx-auto md:mx-0 md:ml-auto mt-2"
+                className="w-32 h-32 object-contain breathe-animation"
               />
+            ) : (
+              <div className="w-32 h-32" /> // Placeholder to maintain layout
             )}
-            <p className="text-gray-500 mt-2">Membro desde: {new Date(userProfile.createdAt?.toDate()).toLocaleDateString()}</p>
+            <p className="text-xl font-bold text-white mt-2">{userProfile.title}</p>
+            <p className="text-gray-500 text-sm mt-1">Membro desde: {new Date(userProfile.createdAt?.toDate()).toLocaleDateString()}</p>
           </div>
         </div>
 

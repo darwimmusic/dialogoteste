@@ -10,14 +10,21 @@ import {
   getLessonsForCourse, 
   updateLessonAttachments,
   getAllCourses,
-  updateCourseFeaturedStatus
+  updateCourseFeaturedStatus,
+  getTitleBadges,
+  updateTitleBadge
 } from '../services/adminService';
 import { addOrUpdateBadgeForCourse } from '../services/courseService'; // Importa a nova função
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 import type { Theme, Course, Lesson, Attachment } from '../types';
 
 // Para controlar qual formulário está visível
-type AdminView = 'theme' | 'course' | 'lesson' | 'manage_attachments' | 'manage_featured' | 'manage_badges' | null;
+type AdminView = 'theme' | 'course' | 'lesson' | 'manage_attachments' | 'manage_featured' | 'manage_badges' | 'manage_title_badges' | null;
+
+const ALL_TITLES = [
+  "Ferro", "Bronze", "Prata", "Ouro", "Platina", 
+  "Esmeralda", "Diamante", "Mestre", "Grão-Mestre", "Campeão"
+];
 
 export const AdminPage: React.FC = () => {
   // Estado para controlar a visão atual
@@ -35,6 +42,7 @@ export const AdminPage: React.FC = () => {
   // Estados dos formulários (agora encapsulados)
   const [formData, setFormData] = useState({ title: '', description: '', coverImageUrl: '', videoUrl: '' });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [titleBadges, setTitleBadges] = useState<Map<string, string>>(new Map());
   
   // Estados de UI
   const [isLoading, setIsLoading] = useState(false);
@@ -112,8 +120,10 @@ export const AdminPage: React.FC = () => {
       } else if (view === 'lesson') {
         // Filtra anexos vazios antes de enviar
         const validAttachments = attachments.filter(att => att.name.trim() !== '' && att.url.trim() !== '');
+        const selectedTheme = themes.find(t => t.id === selectedThemeId);
         await createLesson(selectedCourseId, { 
           title: formData.title, 
+          themeTitle: selectedTheme?.title || 'Tema Desconhecido',
           videoUrl: formData.videoUrl, 
           transcript: "Placeholder", // A transcrição é adicionada manualmente depois
           attachments: validAttachments 
@@ -293,6 +303,24 @@ export const AdminPage: React.FC = () => {
         >
           Gerenciar Badges
         </button>
+        <button 
+          onClick={async () => {
+            setView('manage_title_badges');
+            setIsLoading(true);
+            try {
+              const fetchedBadges = await getTitleBadges();
+              const badgeMap = new Map<string, string>();
+              fetchedBadges.forEach(badge => {
+                badgeMap.set(badge.name, badge.imageUrl);
+              });
+              setTitleBadges(badgeMap);
+            } catch (err) { setError("Não foi possível carregar as badges de título."); }
+            setIsLoading(false);
+          }} 
+          className="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded"
+        >
+          Gerenciar Badges de Título
+        </button>
       </div>
 
       {error && <p className="text-red-400 text-sm p-3 bg-red-900/50 rounded-md">{error}</p>}
@@ -405,6 +433,53 @@ export const AdminPage: React.FC = () => {
                   {isLoading ? <LoadingSpinner /> : 'Salvar Badge'}
                 </button>
               </form>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SEÇÃO PARA GERENCIAR BADGES DE TÍTULO */}
+      {view === 'manage_title_badges' && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-white mb-2">Gerenciar Badges de Título</h3>
+          <div className="space-y-4 p-4 bg-gray-700 rounded-md">
+            {ALL_TITLES.map(title => (
+              <div key={title} className="flex items-center space-x-4">
+                <label className="w-1/4 text-lg text-gray-300">{title}</label>
+                <input
+                  type="text"
+                  value={titleBadges.get(title) || ''}
+                  onChange={(e) => {
+                    const newBadges = new Map(titleBadges);
+                    newBadges.set(title, e.target.value);
+                    setTitleBadges(newBadges);
+                  }}
+                  placeholder="URL da imagem da badge"
+                  className="flex-grow bg-gray-600 rounded py-1 px-2 text-white"
+                />
+                <button
+                  onClick={async () => {
+                    const imageUrl = titleBadges.get(title);
+                    if (typeof imageUrl === 'string') {
+                      setIsLoading(true);
+                      setError(null);
+                      setSuccess(null);
+                      try {
+                        await updateTitleBadge(title, imageUrl);
+                        setSuccess(`Badge '${title}' salva com sucesso!`);
+                        setTimeout(() => setSuccess(null), 3000);
+                      } catch (err) {
+                        setError(`Falha ao salvar a badge '${title}'.`);
+                      } finally {
+                        setIsLoading(false);
+                      }
+                    }
+                  }}
+                  className="bg-teal-600 hover:bg-teal-500 text-white font-bold py-1 px-3 rounded text-sm"
+                >
+                  Salvar
+                </button>
+              </div>
             ))}
           </div>
         </div>

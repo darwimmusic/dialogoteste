@@ -116,7 +116,6 @@ const ProfilePage: React.FC = () => {
           </div>
           <div className="flex-grow text-center md:text-left">
             <h1 className="text-3xl font-bold text-white">{userProfile.displayName}</h1>
-            <p className="text-lg text-gray-400">{userProfile.title}</p>
             <div className="mt-2">
               <span className="font-semibold text-gray-200">LVL: {userProfile.level}</span>
               <div className="w-full bg-gray-700 rounded-full h-4 mt-1">
@@ -129,8 +128,15 @@ const ProfilePage: React.FC = () => {
             </div>
           </div>
           <div className="text-center md:text-right">
-            {/* Aqui podem entrar botões de editar perfil, etc. */}
-            <p className="text-gray-500">Membro desde: {new Date(userProfile.createdAt?.toDate()).toLocaleDateString()}</p>
+            <p className="text-lg font-semibold text-gray-200">{userProfile.title}</p>
+            {userProfile.titleBadgeUrl && (
+              <img 
+                src={userProfile.titleBadgeUrl} 
+                alt={`Badge para ${userProfile.title}`}
+                className="w-16 h-16 mx-auto md:mx-0 md:ml-auto mt-2"
+              />
+            )}
+            <p className="text-gray-500 mt-2">Membro desde: {new Date(userProfile.createdAt?.toDate()).toLocaleDateString()}</p>
           </div>
         </div>
 

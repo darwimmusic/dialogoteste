@@ -47,7 +47,7 @@ export const createUserProfileDocument = async (user: User, additionalData: { di
         isAdmin: false,
         xp: 0,
         level: 1,
-        title: 'Rookie',
+        title: 'Ferro',
         completedCourses: [],
         badges: [],
       };

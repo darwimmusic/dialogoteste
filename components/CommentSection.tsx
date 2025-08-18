@@ -54,7 +54,7 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
         <div className="flex-1">
           <div className="flex justify-between items-center">
             <p className="font-semibold text-sm text-white">{comment.author?.displayName}</p>
-            {user && (user.uid === comment.authorId || isAdmin) && (
+            {user && user.uid === comment.authorId && (
               <button 
                 onClick={handleDelete} 
                 className="text-xs text-red-400 hover:text-red-300"

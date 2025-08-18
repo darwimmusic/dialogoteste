@@ -25,17 +25,17 @@ const XP_TO_LEVEL_UP = 100;
 const MAX_LEVEL = 50;
 
 const TITLES: { [key: number]: string } = {
-  1: "Rookie",
-  5: "Junior",
-  10: "Senior",
-  15: "Amateur",
-  20: "Semi-profissional",
-  25: "Profissional",
-  30: "Master",
-  35: "Grand Master",
-  40: "Semi-champion",
-  45: "Champion",
-  50: "Champion", // Nível máximo
+  1: "Ferro",
+  5: "Bronze",
+  10: "Prata",
+  15: "Ouro",
+  20: "Platina",
+  25: "Esmeralda",
+  30: "Diamante",
+  35: "Mestre",
+  40: "Grão-Mestre",
+  45: "Campeão",
+  50: "Campeão", // Nível máximo
 };
 
 /**
@@ -69,19 +69,31 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   if (snapshot.exists()) {
     const data = snapshot.data();
     // Cria um perfil base com valores padrão para garantir consistência
-    const userProfile = {
+    let userProfile = {
       uid: data.uid || uid,
       displayName: data.displayName || 'Usuário',
       email: data.email || '',
       xp: data.xp || 0,
       level: data.level || 1,
-      title: data.title || 'Iniciante',
+      title: data.title || 'Ferro',
       completedCourses: data.completedCourses || [],
       badges: data.badges || [],
       isAdmin: data.isAdmin || false,
       createdAt: data.createdAt || new Date(),
       ...data,
     } as UserProfile;
+
+    // Busca a imagem da badge de título
+    try {
+      const titleBadgeRef = doc(db, 'title_badges', userProfile.title);
+      const titleBadgeSnap = await getDoc(titleBadgeRef);
+      if (titleBadgeSnap.exists()) {
+        userProfile.titleBadgeUrl = titleBadgeSnap.data().imageUrl;
+      }
+    } catch (e) {
+      console.error("Could not fetch title badge:", e);
+      // Continua mesmo se a badge não for encontrada
+    }
 
     // Se o usuário for admin, busca todas as badges existentes e as atribui a ele.
     if (userProfile.isAdmin) {

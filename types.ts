@@ -19,6 +19,7 @@ export interface UserProfile {
   xp: number;
   level: number;
   title: string;
+  titleBadgeUrl?: string; // URL da imagem da badge de título
   completedCourses: string[];
   completedLessons?: string[];
   badges: Badge[];
@@ -60,6 +61,7 @@ export interface Course {
 export interface Theme {
   id: string;
   title: string;
+  description: string;
   courses: Course[];
 }
 

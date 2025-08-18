@@ -3,12 +3,15 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getCourseWithLessons, updateLessonSummary } from '../services/courseService';
+import { completeLesson, awardBadgeIfCourseCompleted } from '../services/userService'; // Funções de conclusão
+import { useAuth } from '../hooks/useAuth'; // Hook de autenticação
 import { generateLessonSummary } from '../services/geminiService';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { TranscriptViewer } from '../components/TranscriptViewer';
 import { AiTutorChat } from '../components/AiTutorChat';
 import { LessonAttachments } from '../components/LessonAttachments';
+import { getUserProfile } from '../services/userService'; // Precisa para verificar aulas concluídas
 import type { Course, Lesson } from '../types';
 
 export const LessonPlayerPage: React.FC = () => {
@@ -18,6 +21,8 @@ export const LessonPlayerPage: React.FC = () => {
   const [lessonSummary, setLessonSummary] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [completionStatus, setCompletionStatus] = useState<string | null>(null); // Para o pop-up
+  const { user } = useAuth(); // Pega o usuário logado
 
   useEffect(() => {
     if (!courseId) return;
@@ -66,6 +71,34 @@ export const LessonPlayerPage: React.FC = () => {
     }
   };
 
+  const handleCompleteLesson = async () => {
+    if (!user || !currentLesson || !courseId) return;
+
+    setCompletionStatus(null);
+    const xpGained = await completeLesson(user.uid, currentLesson.id);
+
+    if (xpGained) {
+      setCompletionStatus("Parabéns! Você ganhou 20 XP!");
+
+      // Verifica se o curso foi concluído para dar a badge
+      const userProfile = await getUserProfile(user.uid);
+      const courseLessons = course?.lessons.map(l => l.id) || [];
+      const completedLessons = userProfile?.completedLessons || [];
+      const allLessonsCompleted = courseLessons.every(lessonId => completedLessons.includes(lessonId));
+
+      if (allLessonsCompleted) {
+        await awardBadgeIfCourseCompleted(user.uid, courseId);
+        setCompletionStatus(`Parabéns! Você concluiu o curso "${course?.title}" e ganhou uma nova badge!`);
+      }
+
+    } else {
+      setCompletionStatus("Você já concluiu esta aula anteriormente.");
+    }
+
+    // Esconde a mensagem após 5 segundos
+    setTimeout(() => setCompletionStatus(null), 5000);
+  };
+
   if (isLoading) return <div className="flex justify-center items-center h-screen"><LoadingSpinner /></div>;
   if (!course) return <div className="text-center p-8">Curso não encontrado.</div>;
   if (!currentLesson) return <div className="text-center p-8">Este curso não possui aulas.</div>;
@@ -78,6 +111,21 @@ export const LessonPlayerPage: React.FC = () => {
            <h1 className="text-3xl font-bold text-white">{course.title}</h1>
            <h2 className="text-xl font-semibold text-gray-300 -mt-4">{currentLesson.title}</h2>
            <VideoPlayer src={currentLesson.videoUrl} />
+
+            {/* Botão de Conclusão e Feedback */}
+            <div className="bg-gray-800/50 p-4 rounded-lg text-center">
+              <button
+                onClick={handleCompleteLesson}
+                disabled={!user}
+                className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-6 rounded-lg disabled:bg-gray-500 disabled:cursor-not-allowed"
+              >
+                Concluir Aula e Ganhar 20 XP
+              </button>
+              {completionStatus && (
+                <p className="text-green-400 mt-3 animate-pulse">{completionStatus}</p>
+              )}
+            </div>
+
            <AiTutorChat transcript={currentLesson.transcript} />
         </div>
         

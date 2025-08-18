@@ -20,6 +20,7 @@ export interface UserProfile {
   level: number;
   title: string;
   completedCourses: string[];
+  completedLessons?: string[]; // Adiciona o novo campo opcional
   badges: Badge[];
   isAdmin: boolean;
   createdAt: any; // ou um tipo mais específico se você usar Timestamps

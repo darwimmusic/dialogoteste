@@ -4,6 +4,8 @@ import {
   getDoc,
   updateDoc,
   increment,
+  collection,
+  getDocs,
 } from "firebase/firestore";
 import {
   getStorage,
@@ -11,7 +13,7 @@ import {
   uploadBytes,
   getDownloadURL,
 } from "firebase/storage";
-import type { UserProfile, Course } from "../types";
+import type { UserProfile, Course, Badge } from "../types";
 
 const db = getFirestore();
 const storage = getStorage();
@@ -66,8 +68,8 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
 
   if (snapshot.exists()) {
     const data = snapshot.data();
-    // Garante que os campos de array obrigatórios existam para evitar erros de renderização.
-    return {
+    // Cria um perfil base com valores padrão para garantir consistência
+    const userProfile = {
       uid: data.uid || uid,
       displayName: data.displayName || 'Usuário',
       email: data.email || '',
@@ -78,8 +80,20 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       badges: data.badges || [],
       isAdmin: data.isAdmin || false,
       createdAt: data.createdAt || new Date(),
-      ...data, // Mantém os outros campos que já existem
+      ...data,
     } as UserProfile;
+
+    // Se o usuário for admin, busca todas as badges existentes e as atribui a ele.
+    if (userProfile.isAdmin) {
+      const coursesCollection = collection(db, "courses");
+      const courseSnapshot = await getDocs(coursesCollection);
+      const allBadges = courseSnapshot.docs
+        .map(doc => (doc.data() as Course).badge)
+        .filter((badge): badge is Badge => badge !== undefined);
+      userProfile.badges = allBadges;
+    }
+
+    return userProfile;
   } else {
     console.warn("No such user profile!");
     return null;
@@ -102,40 +116,48 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
 };
 
 /**
- * Processa a conclusão de uma aula, adicionando XP e verificando se o usuário subiu de nível.
+ * Processa a conclusão de uma aula, adicionando XP e prevenindo repetições.
  * @param uid O ID do usuário.
+ * @param lessonId O ID da aula concluída.
+ * @returns `true` se o XP foi concedido, `false` se a aula já havia sido concluída.
  */
-export const completeLesson = async (uid: string): Promise<void> => {
+export const completeLesson = async (uid: string, lessonId: string): Promise<boolean> => {
   const userRef = doc(db, `users/${uid}`);
   const userProfile = await getUserProfile(uid);
 
   if (!userProfile || userProfile.level >= MAX_LEVEL) {
-    return; // Não faz nada se o perfil não existir ou já estiver no nível máximo
+    return false; // Não faz nada se o perfil não existir ou já estiver no nível máximo
   }
+
+  // Verifica se a aula já foi concluída
+  if (userProfile.completedLessons?.includes(lessonId)) {
+    console.log(`Aula ${lessonId} já concluída pelo usuário ${uid}. Nenhum XP concedido.`);
+    return false;
+  }
+
+  // Adiciona a aula à lista de concluídas
+  const updatedCompletedLessons = [...(userProfile.completedLessons || []), lessonId];
 
   const newXp = (userProfile.xp % XP_TO_LEVEL_UP) + XP_PER_LESSON;
   const levelsGained = Math.floor(newXp / XP_TO_LEVEL_UP);
 
+  const updates: { [key: string]: any } = {
+    completedLessons: updatedCompletedLessons,
+    xp: increment(XP_PER_LESSON),
+  };
+
   if (levelsGained > 0) {
     const newLevel = Math.min(userProfile.level + levelsGained, MAX_LEVEL);
     const newTitle = getTitleForLevel(newLevel);
-    
-    const updates: { [key: string]: any } = {
-      xp: increment(XP_PER_LESSON),
-      level: newLevel,
-    };
-
+    updates.level = newLevel;
     if (newTitle && newTitle !== userProfile.title) {
       updates.title = newTitle;
     }
-    
-    await updateDoc(userRef, updates);
-
-  } else {
-    await updateDoc(userRef, {
-      xp: increment(XP_PER_LESSON),
-    });
   }
+  
+  await updateDoc(userRef, updates);
+  console.log(`Aula ${lessonId} concluída. ${XP_PER_LESSON} XP concedido ao usuário ${uid}.`);
+  return true;
 };
 
 /**

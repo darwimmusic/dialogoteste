@@ -100,7 +100,8 @@ export const signUpWithEmail = async (email: string, password: string, displayNa
  */
 export const signInWithEmail = async (email: string, password: string): Promise<void> => {
   try {
-    await signInWithEmailAndPassword(auth, email, password);
+    const { user } = await signInWithEmailAndPassword(auth, email, password);
+    await createUserProfileDocument(user); // Garante que o perfil exista
   } catch (error: any) {
     console.error("Error signing in with email: ", error);
      if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password' || error.code === 'auth/user-not-found') {

@@ -68,11 +68,23 @@ export interface Theme {
 export interface ForumComment {
   id: string;
   authorId: string;
-  postId: string;
-  content: string; // Conteúdo em HTML
+  content: string;
   createdAt: any; // Firestore Timestamp
-  parentId?: string | null; // Para respostas aninhadas
   upvotes: number;
+  postId: string;
+  parentId?: string | null;
+}
+
+export interface NewsArticle {
+  id: string;
+  title: string;
+  content: string; // HTML content from Tiptap
+  coverImageUrl: string;
+  authorId: string;
+  createdAt: any; // Firestore Timestamp
+  updatedAt?: any; // Firestore Timestamp
+  likes: number;
+  likedBy: string[]; // Array of user UIDs
 }
 
 export interface ForumPost {

@@ -10,6 +10,8 @@ import { PostEditorPage } from './pages/PostEditorPage';
 import { PostPage } from './pages/PostPage';
 import { LiveSessionsPage } from './pages/LiveSessionsPage';
 import { NewsPage } from './pages/NewsPage';
+import { NewsEditorPage } from './pages/NewsEditorPage';
+import { NewsDetailPage } from './pages/NewsDetailPage';
 import ProfilePage from './pages/ProfilePage';
 import { LoginPage } from './pages/LoginPage';
 import { AdminPage } from './pages/AdminPage';
@@ -38,6 +40,9 @@ function App() {
                 <Route path="/forum/post/:postId" element={<PostPage />} /> {/* Rota simplificada */}
                 <Route path="/live" element={<LiveSessionsPage />} />
                 <Route path="/news" element={<NewsPage />} />
+                <Route path="/news/create" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
+                <Route path="/news/edit/:newsId" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
+                <Route path="/news/:newsId" element={<NewsDetailPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 
                 {/* ROTA ATUALIZADA: Leva para o player de aula, que agora é a página de detalhes do curso */}

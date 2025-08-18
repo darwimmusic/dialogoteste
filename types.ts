@@ -20,7 +20,7 @@ export interface UserProfile {
   level: number;
   title: string;
   completedCourses: string[];
-  completedLessons?: string[]; // Adiciona o novo campo opcional
+  completedLessons?: string[];
   badges: Badge[];
   isAdmin: boolean;
   createdAt: any; // ou um tipo mais específico se você usar Timestamps
@@ -61,4 +61,26 @@ export interface Theme {
   id: string;
   title: string;
   courses: Course[];
+}
+
+// --- Tipos do Fórum (Estrutura Reddit) ---
+
+export interface ForumComment {
+  id: string;
+  authorId: string;
+  postId: string;
+  content: string; // Conteúdo em HTML
+  createdAt: any; // Firestore Timestamp
+  parentId?: string | null; // Para respostas aninhadas
+  upvotes: number;
+}
+
+export interface ForumPost {
+  id: string;
+  authorId: string;
+  title: string;
+  content: string; // Conteúdo em HTML do editor de texto rico
+  createdAt: any; // Firestore Timestamp
+  upvotes: number;
+  commentCount: number;
 }

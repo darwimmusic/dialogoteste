@@ -6,6 +6,8 @@ import { Header } from './components/Header';
 import { DashboardPage } from './pages/DashboardPage';
 import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ForumPage } from './pages/ForumPage';
+import { PostEditorPage } from './pages/PostEditorPage';
+import { PostPage } from './pages/PostPage';
 import { LiveSessionsPage } from './pages/LiveSessionsPage';
 import { NewsPage } from './pages/NewsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -31,7 +33,9 @@ function App() {
             {user && (
               <>
                 <Route path="/" element={<DashboardPage />} />
-                <Route path="/forum" element={<ForumPage />} /> 
+                <Route path="/forum" element={<ForumPage />} />
+                <Route path="/forum/create-post" element={<PostEditorPage />} /> {/* Rota simplificada */}
+                <Route path="/forum/post/:postId" element={<PostPage />} /> {/* Rota simplificada */}
                 <Route path="/live" element={<LiveSessionsPage />} />
                 <Route path="/news" element={<NewsPage />} />
                 <Route path="/profile" element={<ProfilePage />} />

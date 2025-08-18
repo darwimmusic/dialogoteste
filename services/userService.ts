@@ -169,7 +169,8 @@ export const completeLesson = async (uid: string, lessonId: string): Promise<boo
 export const uploadProfilePicture = async (uid: string, file: File): Promise<string> => {
   if (!file) throw new Error("Nenhum arquivo fornecido.");
 
-  const filePath = `users/${uid}/profile.jpg`;
+  // Ajusta o caminho para corresponder às regras de segurança: /profile/avatar.jpg
+  const filePath = `user_content/${uid}/profile/avatar.jpg`;
   const storageRef = ref(storage, filePath);
 
   try {

@@ -94,9 +94,10 @@ export const getPostsByAuthor = async (authorId: string): Promise<(ForumPost & {
 /**
  * Adiciona um novo comentário a um post.
  * @param postId O ID do post a ser comentado.
- * @param commentData Os dados do comentário.
+ * @param commentData Os dados do comentário, que agora devem incluir o authorId.
  */
 export const addComment = async (postId: string, commentData: Omit<ForumComment, 'id' | 'createdAt' | 'upvotes' | 'postId'>): Promise<void> => {
+  // A `commentData` agora deve conter `authorId` vindo do componente.
   try {
     const commentsCollection = collection(db, `posts/${postId}/comments`);
     await addDoc(commentsCollection, {

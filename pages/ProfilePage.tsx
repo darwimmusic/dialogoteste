@@ -1,16 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { getUserProfile } from '../services/userService';
+import { getUserProfile, uploadProfilePicture } from '../services/userService';
 import { getPostsByAuthor } from '../services/forumService'; // Importa a nova função
 import type { UserProfile, ForumPost } from '../types';
 import { LoadingPage } from './LoadingPage';
 import { Link } from 'react-router-dom';
+import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 
 const ProfilePage: React.FC = () => {
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userPosts, setUserPosts] = useState<(ForumPost & { id: string })[]>([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const fetchProfileData = async () => {
@@ -46,17 +50,70 @@ const ProfilePage: React.FC = () => {
   // Barra de progresso de XP
   const xpProgress = (userProfile.xp % 100);
 
+  const handlePhotoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !user) return;
+
+    setError(null);
+
+    // Validação do tipo de arquivo
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Formato de arquivo inválido. Use PNG ou JPEG.');
+      return;
+    }
+
+    // Validação do tamanho do arquivo (3MB)
+    const maxSizeInBytes = 3 * 1024 * 1024;
+    if (file.size > maxSizeInBytes) {
+      setError('O arquivo é muito grande. O tamanho máximo é 3MB.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const newPhotoURL = await uploadProfilePicture(user.uid, file);
+      setUserProfile(prevProfile => prevProfile ? { ...prevProfile, photoURL: newPhotoURL } : null);
+    } catch (uploadError) {
+      console.error("Erro no upload:", uploadError);
+      setError('Falha ao enviar a imagem. Tente novamente.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen text-white">
       <div className="container mx-auto p-4 md:p-8">
         
+        {error && (
+          <div className="bg-red-500 text-white p-3 rounded-md mb-4 text-center">
+            {error}
+          </div>
+        )}
+
         {/* Seção Superior do Perfil */}
         <div className="bg-gray-800/50 rounded-lg shadow-md p-6 flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
-          <img 
-            src={userProfile.photoURL || 'https://via.placeholder.com/150'} 
-            alt="Foto do Perfil" 
-            className="w-32 h-32 rounded-full border-4 border-blue-500 object-cover"
-          />
+          <div className="relative group">
+            <img
+              src={userProfile.photoURL || 'https://via.placeholder.com/150'}
+              alt="Foto do Perfil"
+              className="w-32 h-32 rounded-full border-4 border-blue-500 object-cover transition-opacity duration-300 group-hover:opacity-50"
+            />
+            <div 
+              className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {uploading ? <LoadingSpinner /> : <span className="text-white text-lg font-bold">Alterar</span>}
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              hidden
+              accept="image/png, image/jpeg"
+              onChange={handlePhotoUpload}
+            />
+          </div>
           <div className="flex-grow text-center md:text-left">
             <h1 className="text-3xl font-bold text-white">{userProfile.displayName}</h1>
             <p className="text-lg text-gray-400">{userProfile.title}</p>

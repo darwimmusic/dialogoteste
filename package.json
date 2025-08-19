@@ -14,9 +14,11 @@
     "@tiptap/pm": "^3.2.0",
     "@tiptap/react": "^3.2.0",
     "@tiptap/starter-kit": "^3.2.0",
+    "agora-rtc-sdk-ng": "^4.24.0",
     "firebase": "^12.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-firebase-hooks": "^5.1.1",
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.8.1"
   },

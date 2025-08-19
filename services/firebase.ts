@@ -4,6 +4,7 @@ import { getFirestore } from "firebase/firestore";
 // ADICIONADO: GoogleAuthProvider para o login com Google
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getStorage } from "firebase/storage";
+import { getDatabase } from "firebase/database"; // Adicionado para Realtime Database
 
 // Objeto de configuração que lê as variáveis de ambiente seguras
 const firebaseConfig = {
@@ -27,6 +28,7 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
+export const rtdb = getDatabase(app); // Adicionado para Realtime Database
 
 // ADICIONADO: Cria e exporta o provedor de autenticação do Google
 export const googleProvider = new GoogleAuthProvider();

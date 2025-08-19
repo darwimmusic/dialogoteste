@@ -4,6 +4,9 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { signOutUser } from '../services/authService';
+import { doc } from 'firebase/firestore';
+import { useDocumentData } from 'react-firebase-hooks/firestore';
+import { db } from '../services/firebase';
 import { HomeIcon } from './icons/HomeIcon';
 import { ForumIcon } from './icons/ForumIcon';
 import { LiveIcon } from './icons/LiveIcon';
@@ -11,8 +14,9 @@ import { NewsIcon } from './icons/NewsIcon';
 import { UserIcon } from './icons/UserIcon'; // Adicionado para consistência
 
 export const Header: React.FC = () => {
-  // Nosso hook agora nos dá o usuário, o status de admin e o status de loading
   const { user, isAdmin } = useAuth();
+  const liveSessionRef = doc(db, 'liveSessions', 'current');
+  const [liveSessionData] = useDocumentData(liveSessionRef);
 
   const handleSignOut = async () => {
     try {
@@ -46,7 +50,13 @@ export const Header: React.FC = () => {
               <NavLink to="/forum" style={activeLinkStyle} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white">
                 <ForumIcon /> Fórum
               </NavLink>
-              <NavLink to="/live" style={activeLinkStyle} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white">
+              <NavLink to="/live" style={activeLinkStyle} className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white relative`}>
+                {liveSessionData?.isLive && (
+                  <span className="absolute top-1 right-1 flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                  </span>
+                )}
                 <LiveIcon /> Ao Vivo
               </NavLink>
               <NavLink to="/news" style={activeLinkStyle} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white">

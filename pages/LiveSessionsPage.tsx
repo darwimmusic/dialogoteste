@@ -32,7 +32,7 @@ export const LiveSessionsPage: React.FC = () => {
   const getToken = async (channelName: string) => {
     try {
       const idToken = await user?.getIdToken();
-      const response = await fetch(`${TOKEN_SERVICE_URL}/get-token`, {
+      const response = await fetch(`${TOKEN_SERVICE_URL}/generate-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,12 +1,13 @@
 // A URL do seu novo serviço de backend seguro
-const tutorServiceUrl = 'https://tutor-service-389818864410.us-central1.run.app/ask';
+const tutorServiceUrl = 'https://tutor-service-v2-389818864410.us-central1.run.app/ask';
 
 /**
  * Gera um documento completo e estruturado a partir da transcrição de uma aula.
  * @param transcript A transcrição bruta da aula.
+ * @param token O token de autenticação do Firebase do usuário.
  * @returns O conteúdo do documento gerado pela IA.
  */
-export async function generateLessonSummary(transcript: string): Promise<string> {
+export async function generateLessonSummary(transcript: string, token: string): Promise<string> {
   const systemPrompt = `
 Você é um especialista em educação e seu objetivo é transformar a transcrição de uma aula em um documento completo e informativo para os alunos. Analise a transcrição a seguir e gere um material de estudo claro, bem estruturado e que aprofunde os conceitos apresentados.
 
@@ -22,13 +23,11 @@ Formate a saída em Markdown para facilitar a leitura.
 `;
 
   try {
-    // Usamos a mesma URL do tutor, mas com um "prompt de sistema" diferente.
-    // O backend deve ser capaz de lidar com diferentes tipos de prompts.
-    // Neste caso, a "pergunta" é o prompt do sistema e o "contexto" é a transcrição.
     const response = await fetch(tutorServiceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
         question: systemPrompt, // Enviamos o prompt como a "pergunta"
@@ -53,14 +52,16 @@ Formate a saída em Markdown para facilitar a leitura.
  * Envia uma pergunta para o NOSSO backend seguro, que então chama o Gemini.
  * @param question A pergunta do usuário.
  * @param transcript O contexto da transcrição da aula.
+ * @param token O token de autenticação do Firebase do usuário.
  * @returns O texto da resposta da IA.
  */
-export async function askLessonTutor(question: string, transcript: string): Promise<string> {
+export async function askLessonTutor(question: string, transcript: string, token: string): Promise<string> {
   try {
     const response = await fetch(tutorServiceUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
         question,

@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { askLessonTutor } from '../services/geminiService';
 import type { ChatMessage } from '../types';
+import { useAuth } from '../hooks/useAuth';
 import { SendIcon } from './icons/SendIcon';
 import { LoadingSpinner } from './icons/LoadingSpinner';
 
@@ -18,6 +19,7 @@ export const AiTutorChat: React.FC<AiTutorChatProps> = ({ transcript }) => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -38,7 +40,11 @@ export const AiTutorChat: React.FC<AiTutorChatProps> = ({ transcript }) => {
     setIsLoading(true);
 
     try {
-      const aiResponse = await askLessonTutor(input, transcript);
+      if (!user) {
+        throw new Error('Usuário não autenticado.');
+      }
+      const token = await user.getIdToken();
+      const aiResponse = await askLessonTutor(input, transcript, token);
       const modelMessage: ChatMessage = { role: 'model', content: aiResponse };
       setMessages((prev) => [...prev, modelMessage]);
     } catch (error) {

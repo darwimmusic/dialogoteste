@@ -58,7 +58,11 @@ export const LessonPlayerPage: React.FC = () => {
 
     // 2. Se não existir, gere um novo, exiba e salve no banco de dados.
     try {
-      const newSummary = await generateLessonSummary(lesson.transcript);
+      if (!user) {
+        throw new Error("Usuário não autenticado para gerar resumo.");
+      }
+      const token = await user.getIdToken();
+      const newSummary = await generateLessonSummary(lesson.transcript, token);
       setLessonSummary(newSummary);
       // Salva o novo resumo no Firestore em segundo plano.
       if (courseId && lesson.id) {

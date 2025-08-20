@@ -47,7 +47,7 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
   }, [isAdmin, channelName, uid]);
 
   useEffect(() => {
-    const participantRef = ref(rtdb, `liveSessions/current/participants/${uid}`);
+    const participantRef = ref(rtdb, `liveSessions/${channelName}/participants/${uid}`);
 
     const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
       await client.subscribe(user, mediaType);

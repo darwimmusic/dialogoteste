@@ -60,17 +60,19 @@ export const LiveChat: React.FC<LiveChatProps> = ({ sessionId }) => {
         })}
         <div ref={messagesEndRef} />
       </div>
-      <form onSubmit={handleSendMessage} className="flex">
-        <input
-          type="text"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          className="flex-grow bg-gray-700 rounded-l-lg p-2 focus:outline-none"
-          placeholder="Digite sua mensagem..."
-        />
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded-r-lg hover:bg-blue-700">
-          Enviar
-        </button>
+      <form onSubmit={handleSendMessage} className="flex-shrink-0">
+        <div className="flex items-center bg-blue-900 rounded-lg p-2">
+          <input
+            type="text"
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="flex-grow bg-transparent text-white placeholder-gray-400 focus:outline-none"
+            placeholder="Digite sua mensagem..."
+          />
+          <button type="submit" className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 disabled:opacity-50" disabled={!text.trim()}>
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2 10a8 8 0 1116 0 8 8 0 01-16 0zm1.25-1.125a.75.75 0 10-1.5 0v2.25a.75.75 0 101.5 0v-2.25zM10 2a8 8 0 100 16 8 8 0 000-16zM7.75 9.25a.75.75 0 10-1.5 0v1.5a.75.75 0 101.5 0v-1.5zm4.5 0a.75.75 0 10-1.5 0v1.5a.75.75 0 101.5 0v-1.5z"/></svg>
+          </button>
+        </div>
       </form>
     </div>
   );

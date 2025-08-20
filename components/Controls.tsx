@@ -9,11 +9,14 @@ interface ControlsProps {
   onToggleScreenShare: () => void;
   onLeave: () => void;
   onPause: () => void;
+  onRaiseHand: () => void;
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
   isScreenSharing: boolean;
   isPaused: boolean;
   isAdmin: boolean;
+  isHandRaised: boolean;
+  isMicEnabledByAdmin: boolean;
 }
 
 const ControlButton: React.FC<{ onClick: () => void; ariaLabel: string; className: string; children: React.ReactNode; label: string }> = ({ onClick, ariaLabel, className, children, label }) => (
@@ -41,18 +44,29 @@ export const Controls: React.FC<ControlsProps> = ({
   isScreenSharing,
   isPaused,
   isAdmin,
+  isHandRaised,
+  isMicEnabledByAdmin,
+  onRaiseHand,
 }) => {
   if (!isAdmin) {
     return (
       <div className="absolute bottom-0 left-0 w-full bg-gray-900 bg-opacity-70 flex justify-center items-center p-4 z-50">
         <div className="flex items-center space-x-6">
-          <ControlButton
+          <button
             onClick={onToggleAudio}
-            className={isAudioEnabled ? 'bg-blue-600' : 'bg-gray-700'}
-            ariaLabel={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
-            label="Microfone"
+            className={`p-3 rounded-full text-white ${isAudioEnabled ? 'bg-blue-600' : 'bg-gray-700'} ${!isMicEnabledByAdmin && 'opacity-50 cursor-not-allowed'}`}
+            aria-label={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
+            disabled={!isMicEnabledByAdmin}
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M5 7a5 5 0 0110 0v1h-1.172l-2-2H15V7a5 5 0 01-10 0v.172l-2 2V7zm-2.121 0A7.002 7.002 0 0110 3a7 7 0 017 7v1h1a1 1 0 011 1v2a1 1 0 01-1 1h-1.172l-2-2H18V9h-1v2.172l-2-2V9h-1v2.172l-2-2V9h-1v2.172l-2-2V9H8v2.172l-2-2V9H5v2.172l-2-2V9H2a1 1 0 01-1-1V8a1 1 0 011-1h1V7zM3.293 1.293a1 1 0 011.414 0L18 14.586a1 1 0 01-1.414 1.414L3.293 2.707a1 1 0 010-1.414z"/></svg>
+          </button>
+          <ControlButton
+            onClick={onRaiseHand}
+            className={isHandRaised ? 'bg-yellow-500' : 'bg-gray-700'}
+            ariaLabel={isHandRaised ? 'Lower hand' : 'Raise hand'}
+            label="Pedir pra Falar"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           </ControlButton>
           <ControlButton
             onClick={onLeave}

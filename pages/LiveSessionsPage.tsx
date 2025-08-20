@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { db, rtdb } from '../services/firebase';
+import { ref, set, remove, onDisconnect } from 'firebase/database';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { getToken } from '../services/agoraService';
 import { MeetUI } from '../components/MeetUI';
@@ -40,6 +41,24 @@ export const LiveSessionsPage: React.FC = () => {
     }
   }, [liveSessionData, isAdmin, isInCall]);
 
+  useEffect(() => {
+    if (!user || !liveSessionData?.channelName) return;
+
+    const participantRef = ref(rtdb, `liveSessions/${liveSessionData.channelName}/participants/${user.uid}`);
+
+    if (isInCall) {
+      const participantData = {
+        displayName: user.displayName || 'Anônimo',
+        uid: user.uid,
+        photoURL: user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'A'}&background=random`,
+      };
+      set(participantRef, participantData);
+      onDisconnect(participantRef).remove();
+    } else {
+      remove(participantRef);
+    }
+  }, [isInCall, user, liveSessionData?.channelName]);
+
   const startLiveSession = async () => {
     if (!user) return;
     const channelName = `live_${user.uid}_${Date.now()}`;
@@ -62,7 +81,16 @@ export const LiveSessionsPage: React.FC = () => {
   };
 
   const stopLiveSession = async () => {
+    if (user && liveSessionData?.channelName) {
+      const participantRef = ref(rtdb, `liveSessions/${liveSessionData.channelName}/participants/${user.uid}`);
+      remove(participantRef);
+    }
     await setDoc(liveSessionRef, { isLive: false, isPaused: false }, { merge: true });
+    setIsInCall(false);
+    setToken(null);
+  };
+
+  const leaveLiveSession = () => {
     setIsInCall(false);
     setToken(null);
   };
@@ -90,7 +118,7 @@ export const LiveSessionsPage: React.FC = () => {
             isAdmin={isAdmin}
             isPaused={liveSessionData?.isPaused || false}
             onPause={togglePauseSession}
-            onLeave={stopLiveSession}
+            onLeave={isAdmin ? stopLiveSession : leaveLiveSession}
           />
         </div>
         <div className="w-96 bg-gray-900">

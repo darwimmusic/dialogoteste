@@ -28,7 +28,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({ sessionId }) => {
         </button>
       </div>
       <div className="flex-grow">
-        {activeTab === 'chat' && <LiveChat key={sessionId} sessionId={sessionId} />}
+        {activeTab === 'chat' && <LiveChat sessionId={sessionId} />}
         {activeTab === 'participants' && <UserList sessionId={sessionId} />}
       </div>
     </div>

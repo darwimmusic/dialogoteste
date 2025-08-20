@@ -9,7 +9,7 @@ import AgoraRTC, {
 import { VideoGrid } from './VideoGrid';
 import { Controls } from './Controls';
 import { VolumeIndicator } from './VolumeIndicator';
-import { ref, set, onDisconnect, serverTimestamp } from 'firebase/database';
+import { ref, set, onDisconnect, serverTimestamp, update, onValue } from 'firebase/database';
 import { rtdb } from '../services/firebase';
 
 interface MeetUIProps {
@@ -33,6 +33,18 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenTrack, setScreenTrack] = useState<ILocalVideoTrack | null>(null);
+  const [isHandRaised, setIsHandRaised] = useState(false);
+  const [isMicEnabledByAdmin, setIsMicEnabledByAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!isAdmin) {
+      const participantRef = ref(rtdb, `liveSessions/${channelName}/participants/${uid}/micEnabled`);
+      const unsubscribe = onValue(participantRef, (snapshot) => {
+        setIsMicEnabledByAdmin(snapshot.val() === true);
+      });
+      return () => unsubscribe();
+    }
+  }, [isAdmin, channelName, uid]);
 
   useEffect(() => {
     const participantRef = ref(rtdb, `liveSessions/current/participants/${uid}`);
@@ -175,6 +187,12 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
     onLeave();
   };
 
+  const handleRaiseHand = () => {
+    const participantRef = ref(rtdb, `liveSessions/${channelName}/participants/${uid}`);
+    update(participantRef, { handRaised: !isHandRaised });
+    setIsHandRaised(!isHandRaised);
+  };
+
   return (
     <div className="w-full h-full flex flex-col bg-gray-800 relative">
       {isPaused && (
@@ -197,6 +215,9 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
         isScreenSharing={isScreenSharing}
         isPaused={isPaused}
         isAdmin={isAdmin}
+        onRaiseHand={handleRaiseHand}
+        isHandRaised={isHandRaised}
+        isMicEnabledByAdmin={isMicEnabledByAdmin}
       />
     </div>
   );

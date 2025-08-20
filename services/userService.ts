@@ -171,6 +171,11 @@ export const completeLesson = async (uid: string, lessonId: string): Promise<boo
     }
   }
   
+  // Concede a conquista de Elo Ferro ao atingir o nível 1
+  if (userProfile.level === 1 && levelsGained > 0) {
+    grantAchievement(uid, 'elo_ferro');
+  }
+  
   await updateDoc(userRef, updates);
   console.log(`Aula ${lessonId} concluída. ${XP_PER_LESSON} XP concedido ao usuário ${uid}.`);
   return true;
@@ -229,6 +234,9 @@ export const awardBadgeIfCourseCompleted = async (uid: string, courseId: string)
       const updatedBadges = [...(userProfile.badges || []), course.badge];
       await updateDoc(userRef, { badges: updatedBadges });
       console.log(`Badge "${course.badge.name}" concedida ao usuário ${uid}.`);
+      
+      // Concede a conquista de primeiro curso concluído
+      grantAchievement(uid, 'first_course_completed');
     }
   } catch (error) {
     console.error("Erro ao conceder a badge: ", error);

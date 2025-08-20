@@ -38,13 +38,13 @@ export const NewsPage: React.FC = () => {
           <LoadingSpinner className="h-8 w-8" />
         </div>
       ) : (
-        <div className="flex flex-col space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {articles.map(article => (
-            <Link to={`/news/${article.id}`} key={article.id} className="flex bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-purple-500/50 transition-shadow duration-300 w-full">
-              <img src={article.coverImageUrl} alt={article.title} className="w-1/3 h-auto object-cover hidden md:block" />
-              <div className="p-6 flex flex-col justify-between">
+            <Link to={`/news/${article.id}`} key={article.id} className="flex flex-col bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-purple-500/50 transition-shadow duration-300">
+              <img src={article.coverImageUrl} alt={article.title} className="w-full h-48 object-cover" />
+              <div className="p-4 flex flex-col flex-grow justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-white mb-2">{article.title}</h2>
+                  <h2 className="text-xl font-bold text-white mb-2">{article.title}</h2>
                   {/* Opcional: Adicionar um resumo do conteúdo aqui se desejar */}
                 </div>
                 <div className="flex justify-between items-center text-sm text-gray-400 mt-4">

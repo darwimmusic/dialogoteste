@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from './firebase';
 import type { ForumPost, ForumComment } from '../types';
+import { grantAchievement } from './achievementService';
 
 // --- Funções de Posts ---
 
@@ -29,6 +30,11 @@ export const createPost = async (postData: Omit<ForumPost, 'id' | 'createdAt' | 
       commentCount: 0,
       createdAt: serverTimestamp()
     });
+
+    // Concede a conquista de primeiro post
+    if (postData.authorId) {
+      grantAchievement(postData.authorId, 'first_forum_post');
+    }
   } catch (error) {
     console.error("Erro ao criar post: ", error);
     throw new Error("Não foi possível criar o post.");
@@ -109,6 +115,11 @@ export const addComment = async (postId: string, commentData: Omit<ForumComment,
     // Atualiza a contagem de comentários no post
     const postRef = doc(db, "posts", postId);
     await updateDoc(postRef, { commentCount: increment(1) });
+
+    // Concede a conquista de primeiro comentário
+    if (commentData.authorId) {
+      grantAchievement(commentData.authorId, 'first_forum_comment');
+    }
   } catch (error) {
     console.error("Erro ao adicionar comentário: ", error);
     throw new Error("Não foi possível adicionar o comentário.");

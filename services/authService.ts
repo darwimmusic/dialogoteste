@@ -60,9 +60,8 @@ export const createUserProfileDocument = async (user: User, additionalData: { di
         await updateProfile(user, { displayName });
       }
 
-      // Concede as conquistas iniciais
+      // Concede a conquista inicial de primeiro login
       await grantAchievement(uid, 'first_login');
-      await grantAchievement(uid, 'elo_ferro');
 
     } catch (error) {
       console.error('Error creating user document', error);

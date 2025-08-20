@@ -21,15 +21,31 @@ interface CommentProps {
 const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) => {
   const [showReply, setShowReply] = useState(false);
   const [replyContent, setReplyContent] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user, isAdmin } = useAuth();
 
   const handleAddReply = async () => {
-    if (!user || !replyContent.trim()) return;
+    if (!user || !replyContent.trim() || isSubmitting) return;
 
-    // Verifica se é o primeiro comentário do usuário
-    const userComments = await getCommentsByUser(user.uid);
-    const isFirstComment = userComments.length === 0;
+    setIsSubmitting(true);
     
+    // Otimista: Adiciona o comentário à UI antes de esperar a resposta do servidor
+    const newReply: CommentWithAuthor = {
+      id: Date.now().toString(), // ID temporário
+      postId: postId,
+      authorId: user.uid,
+      content: replyContent,
+      parentId: comment.id,
+      createdAt: new Date(),
+      upvotes: 0,
+      likedBy: [],
+      author: await getUserProfile(user.uid),
+      replies: [],
+    };
+    
+    // Atualiza o estado local (a ser implementado no componente pai)
+    // onReplySuccess(newReply); // Passa o novo comentário para o pai
+
     await addComment(postId, {
       authorId: user.uid,
       content: replyContent,
@@ -37,18 +53,24 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
       likedBy: [],
     });
 
-    // Concede a conquista se for o primeiro comentário
-    if (isFirstComment) {
-      await grantAchievement(user.uid, 'first_forum_comment');
-    }
-
     setReplyContent('');
     setShowReply(false);
-    onReplySuccess(); // Notifica o componente pai para recarregar os comentários
+    onReplySuccess(); // Recarrega para obter o ID real e confirmar
+    setIsSubmitting(false);
   };
 
   const handleLike = async () => {
     if (!user) return;
+
+    // Otimista: Atualiza a UI imediatamente
+    const alreadyLiked = comment.likedBy?.includes(user.uid);
+    const newUpvotes = (comment.upvotes || 0) + (alreadyLiked ? -1 : 1);
+    const newLikedBy = alreadyLiked
+      ? comment.likedBy?.filter(uid => uid !== user.uid)
+      : [...(comment.likedBy || []), user.uid];
+
+    // Atualiza o estado local (a ser implementado no componente pai)
+    // onLikeToggle(comment.id, newUpvotes, newLikedBy);
 
     // Conquista: Primeira curtida em comentário
     const userProfile = await getUserProfile(user.uid);
@@ -58,7 +80,7 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
     }
 
     await toggleCommentLike(postId, comment.id, user.uid);
-    onReplySuccess(); // Recarrega para atualizar a contagem de likes
+    onReplySuccess(); // Sincroniza com o servidor
   };
 
   const handleDelete = async () => {
@@ -118,6 +140,7 @@ export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [rootComment, setRootComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
 
   const fetchComments = async () => {
@@ -151,11 +174,24 @@ export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
   }, [postId]);
 
   const handleAddRootComment = async () => {
-    if (!user || !rootComment.trim()) return;
+    if (!user || !rootComment.trim() || isSubmitting) return;
 
-    // Verifica se é o primeiro comentário do usuário
-    const userComments = await getCommentsByUser(user.uid);
-    const isFirstComment = userComments.length === 0;
+    setIsSubmitting(true);
+
+    // Otimista: Adiciona o comentário à UI antes de esperar a resposta do servidor
+    const newComment: CommentWithAuthor = {
+      id: Date.now().toString(), // ID temporário
+      postId: postId,
+      authorId: user.uid,
+      content: rootComment,
+      parentId: null,
+      createdAt: new Date(),
+      upvotes: 0,
+      likedBy: [],
+      author: await getUserProfile(user.uid),
+      replies: [],
+    };
+    setComments(prev => [...prev, newComment]);
 
     await addComment(postId, {
       authorId: user.uid,
@@ -164,13 +200,9 @@ export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
       likedBy: [],
     });
 
-    // Concede a conquista se for o primeiro comentário
-    if (isFirstComment) {
-      await grantAchievement(user.uid, 'first_forum_comment');
-    }
-
     setRootComment('');
-    fetchComments(); // Recarrega tudo
+    fetchComments(); // Sincroniza para obter o ID real
+    setIsSubmitting(false);
   };
 
   if (isLoading) return <LoadingSpinner />;
@@ -186,7 +218,13 @@ export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Adicionar um Comentário</h3>
         <TiptapEditor content={rootComment} onChange={setRootComment} />
-        <button onClick={handleAddRootComment} className="bg-green-600 text-white px-4 py-2 rounded mt-2">Comentar</button>
+        <button 
+          onClick={handleAddRootComment} 
+          className="bg-green-600 text-white px-4 py-2 rounded mt-2 disabled:bg-gray-500"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? <LoadingSpinner /> : 'Comentar'}
+        </button>
       </div>
     </div>
   );

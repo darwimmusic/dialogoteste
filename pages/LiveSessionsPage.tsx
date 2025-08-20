@@ -5,8 +5,7 @@ import { db } from '../services/firebase';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { getToken } from '../services/agoraService';
 import { MeetUI } from '../components/MeetUI';
-import { LiveChat } from '../components/LiveChat';
-import { UserList } from '../components/UserList';
+import { SidebarTabs } from '../components/SidebarTabs';
 import { LiveIndicator } from '../components/LiveIndicator';
 
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
@@ -94,13 +93,8 @@ export const LiveSessionsPage: React.FC = () => {
             onLeave={stopLiveSession}
           />
         </div>
-        <div className="w-96 bg-gray-900 flex flex-col">
-          <div className="h-1/2">
-            <LiveChat key={liveSessionData.channelName} sessionId={liveSessionData.channelName} />
-          </div>
-          <div className="h-1/2 border-t border-gray-700">
-            <UserList sessionId={liveSessionData.channelName} />
-          </div>
+        <div className="w-96 bg-gray-900">
+          <SidebarTabs sessionId={liveSessionData.channelName} />
         </div>
       </div>
     );

@@ -3,17 +3,27 @@ import React from 'react';
 interface ControlsProps {
   onToggleAudio: () => void;
   onToggleVideo: () => void;
+  onToggleScreenShare: () => void;
   onLeave: () => void;
+  onPause: () => void;
   isAudioEnabled: boolean;
   isVideoEnabled: boolean;
+  isScreenSharing: boolean;
+  isPaused: boolean;
+  isAdmin: boolean;
 }
 
 export const Controls: React.FC<ControlsProps> = ({
   onToggleAudio,
   onToggleVideo,
+  onToggleScreenShare,
   onLeave,
+  onPause,
   isAudioEnabled,
   isVideoEnabled,
+  isScreenSharing,
+  isPaused,
+  isAdmin,
 }) => {
   return (
     <div className="fixed bottom-0 left-0 w-full bg-gray-900 bg-opacity-70 flex justify-center items-center p-4 z-50">
@@ -34,6 +44,24 @@ export const Controls: React.FC<ControlsProps> = ({
           {/* Placeholder for Video Icon */}
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.022 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clipRule="evenodd"/></svg>
         </button>
+        <button
+          onClick={onToggleScreenShare}
+          className={`p-3 rounded-full ${isScreenSharing ? 'bg-green-600' : 'bg-gray-700'} text-white hover:bg-opacity-80`}
+          aria-label={isScreenSharing ? 'Stop sharing screen' : 'Share screen'}
+        >
+          {/* Placeholder for Screen Share Icon */}
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.75 2.75a.75.75 0 00-1.5 0v8.5a.75.75 0 001.5 0v-8.5z"/><path d="M10 18a8 8 0 100-16 8 8 0 000 16zm0 1.5a9.5 9.5 0 100-19 9.5 9.5 0 000 19z"/><path d="M12.99 4.01a.75.75 0 00-1.06-1.06l-2.5 2.5a.75.75 0 001.06 1.06l2.5-2.5z"/><path d="M7.01 4.01a.75.75 0 00-1.06 1.06l2.5 2.5a.75.75 0 001.06-1.06l-2.5-2.5z"/></svg>
+        </button>
+        {isAdmin && (
+          <button
+            onClick={onPause}
+            className={`p-3 rounded-full ${isPaused ? 'bg-yellow-500' : 'bg-gray-700'} text-white hover:bg-opacity-80`}
+            aria-label={isPaused ? 'Resume live' : 'Pause live'}
+          >
+            {/* Placeholder for Pause Icon */}
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 6a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zm1 5a1 1 0 100 2h2a1 1 0 100-2H9z" clipRule="evenodd" /></svg>
+          </button>
+        )}
         <button
           onClick={onLeave}
           className="p-3 rounded-full bg-red-600 text-white hover:bg-red-700"

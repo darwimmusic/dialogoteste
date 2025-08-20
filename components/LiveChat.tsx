@@ -2,7 +2,7 @@ import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { ref, push, serverTimestamp } from 'firebase/database';
 import { rtdb } from '../services/firebase';
-import { useListVals } from 'react-firebase-hooks/database';
+import { useList } from 'react-firebase-hooks/database';
 
 interface LiveChatProps {
   sessionId: string;
@@ -20,14 +20,14 @@ export const LiveChat: React.FC<LiveChatProps> = ({ sessionId }) => {
   const { user } = useAuth();
   const [text, setText] = React.useState('');
   const messagesRef = ref(rtdb, `liveChats/${sessionId}`);
-  const [messages, loading] = useListVals<ChatMessage>(messagesRef);
+  const [snapshots, loading] = useList(messagesRef);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  React.useEffect(scrollToBottom, [messages]);
+  React.useEffect(scrollToBottom, [snapshots]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,14 +47,17 @@ export const LiveChat: React.FC<LiveChatProps> = ({ sessionId }) => {
       <h2 className="text-xl font-bold mb-4 border-b border-gray-700 pb-2">Chat ao Vivo</h2>
       <div className="flex-grow overflow-y-auto mb-4 pr-2">
         {loading && <p>Carregando chat...</p>}
-        {messages && messages.map((msg, index) => (
-          <div key={index} className={`mb-2 ${msg.authorId === user?.uid ? 'text-right' : ''}`}>
-            <p className="text-xs text-gray-400">{msg.authorName}</p>
-            <p className={`inline-block p-2 rounded-lg ${msg.authorId === user?.uid ? 'bg-blue-600' : 'bg-gray-700'}`}>
-              {msg.text}
-            </p>
-          </div>
-        ))}
+        {snapshots && snapshots.map((snapshot) => {
+          const msg = snapshot.val() as ChatMessage;
+          return (
+            <div key={snapshot.key} className={`mb-2 ${msg.authorId === user?.uid ? 'text-right' : ''}`}>
+              <p className="text-xs text-gray-400">{msg.authorName}</p>
+              <p className={`inline-block p-2 rounded-lg ${msg.authorId === user?.uid ? 'bg-blue-600' : 'bg-gray-700'}`}>
+                {msg.text}
+              </p>
+            </div>
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
       <form onSubmit={handleSendMessage} className="flex">

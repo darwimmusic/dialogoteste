@@ -52,9 +52,15 @@ export const LiveSessionsPage: React.FC = () => {
   };
 
   const stopLiveSession = async () => {
-    await setDoc(liveSessionRef, { isLive: false }, { merge: true });
+    await setDoc(liveSessionRef, { isLive: false, isPaused: false }, { merge: true });
     setIsInCall(false);
     setToken(null);
+  };
+
+  const togglePauseSession = async () => {
+    if (liveSessionData) {
+      await setDoc(liveSessionRef, { isPaused: !liveSessionData.isPaused }, { merge: true });
+    }
   };
 
   if (loading) {
@@ -70,6 +76,9 @@ export const LiveSessionsPage: React.FC = () => {
             channelName={liveSessionData.channelName}
             token={token}
             uid={user.uid}
+            isAdmin={isAdmin}
+            isPaused={liveSessionData?.isPaused || false}
+            onPause={togglePauseSession}
           />
         </div>
         <div className="w-96 bg-gray-900">

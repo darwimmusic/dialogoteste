@@ -22,12 +22,12 @@ function App() {
   const { user, isAdmin, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-900 flex justify-center items-center"><LoadingSpinner /></div>;
+    return <div className="min-h-screen bg-[#181818] flex justify-center items-center"><LoadingSpinner /></div>;
   }
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
+      <div className="min-h-screen bg-[#181818] text-gray-100 font-sans">
         {user && <Header />}
         <main>
           <Routes>

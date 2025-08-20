@@ -44,7 +44,7 @@ export const ForumPage: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-4xl font-bold text-white">Fórum</h1>
         <Link to="/forum/create-post">
-          <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded">
+          <button className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded">
             Criar Novo Post
           </button>
         </Link>
@@ -53,13 +53,13 @@ export const ForumPage: React.FC = () => {
       <div className="flex items-center space-x-4 mb-6 border-b border-gray-700 pb-4">
         <button
           onClick={() => setFilter('all')}
-          className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          className={`px-4 py-2 rounded-md ${filter === 'all' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
         >
           Todos os Posts
         </button>
         <button
           onClick={() => setFilter('my-posts')}
-          className={`px-4 py-2 rounded-md ${filter === 'my-posts' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          className={`px-4 py-2 rounded-md ${filter === 'my-posts' ? 'bg-purple-600 text-white' : 'bg-gray-700 text-gray-300'}`}
         >
           Meus Posts
         </button>
@@ -72,7 +72,7 @@ export const ForumPage: React.FC = () => {
           posts.map(post => (
             <div key={post.id} className="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-colors">
               <Link to={`/forum/post/${post.id}`} className="block">
-                <h3 className="text-xl font-semibold text-blue-400">{post.title}</h3>
+                <h3 className="text-xl font-semibold text-purple-400">{post.title}</h3>
                 <div className="text-xs text-gray-500 mt-2 flex items-center gap-4">
                   <span>{post.commentCount || 0} comentários</span>
                   <span>{post.upvotes || 0} upvotes</span>

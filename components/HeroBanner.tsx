@@ -81,7 +81,7 @@ export const HeroBanner: React.FC = () => {
         </p>
         <Link
           to={`/course/${featuredCourses[currentIndex].id}`}
-          className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 self-start"
+          className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 self-start"
         >
           Ver Curso
         </Link>

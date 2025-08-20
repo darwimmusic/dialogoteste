@@ -29,7 +29,7 @@ export const Header: React.FC = () => {
 
   // Estilo para o NavLink ativo, para o usuário saber em qual página está
   const activeLinkStyle = ({ isActive }: { isActive: boolean }) => 
-    isActive ? { color: '#38bdf8', /* azul claro */ } : {};
+    isActive ? { color: '#a78bfa', /* roxo claro */ } : {};
 
   return (
     <header className="bg-gray-800/60 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-20">
@@ -38,8 +38,8 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-8">
             {/* O Logo agora é um Link para a página inicial */}
             <Link to="/" className="flex-shrink-0">
-              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">
-                Comunidade IA
+              <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-indigo-500">
+                d.IA.logo
               </span>
             </Link>
             <div className="hidden md:flex items-center gap-4">
@@ -77,12 +77,12 @@ export const Header: React.FC = () => {
             <Link to="/profile">
               {user?.photoURL ? (
                 <img
-                  className="h-9 w-9 rounded-full ring-2 ring-offset-2 ring-offset-gray-800 ring-blue-500"
+                  className="h-9 w-9 rounded-full ring-2 ring-offset-2 ring-offset-gray-800 ring-purple-500"
                   src={user.photoURL}
                   alt="User profile"
                 />
               ) : (
-                <div className="h-9 w-9 rounded-full ring-2 ring-offset-2 ring-offset-gray-800 ring-blue-500 bg-gray-600 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-full ring-2 ring-offset-2 ring-offset-gray-800 ring-purple-500 bg-gray-600 flex items-center justify-center">
                   <UserIcon />
                 </div>
               )}

@@ -98,7 +98,7 @@ const ProfilePage: React.FC = () => {
             <img
               src={userProfile.photoURL || 'https://via.placeholder.com/150'}
               alt="Foto do Perfil"
-              className="w-32 h-32 rounded-full border-4 border-blue-500 object-cover transition-opacity duration-300 group-hover:opacity-50"
+              className="w-32 h-32 rounded-full border-4 border-purple-500 object-cover transition-opacity duration-300 group-hover:opacity-50"
             />
             <div 
               className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
@@ -120,7 +120,7 @@ const ProfilePage: React.FC = () => {
               <span className="font-semibold text-gray-200">LVL: {userProfile.level}</span>
               <div className="w-full bg-gray-700 rounded-full h-4 mt-1">
                 <div 
-                  className="bg-blue-500 h-4 rounded-full" 
+                  className="bg-purple-500 h-4 rounded-full" 
                   style={{ width: `${xpProgress}%` }}
                 ></div>
               </div>
@@ -169,7 +169,7 @@ const ProfilePage: React.FC = () => {
               userPosts.slice(0, 5).map(post => (
                 <div key={post.id} className="bg-gray-800/50 p-4 rounded-lg hover:bg-gray-700/50 transition-colors">
                   <Link to={`/forum/post/${post.id}`} className="block">
-                    <h3 className="text-lg font-semibold text-blue-400">{post.title}</h3>
+                    <h3 className="text-lg font-semibold text-purple-400">{post.title}</h3>
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(post.createdAt?.toDate()).toLocaleDateString()}
                     </p>
@@ -180,7 +180,7 @@ const ProfilePage: React.FC = () => {
               <div className="col-span-full text-center p-6 bg-gray-800/50 rounded-lg">
                 <p className="text-gray-400 mb-4">Você ainda não criou nenhum post.</p>
                 <Link to="/forum">
-                  <button className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded">
+                  <button className="bg-purple-600 hover:bg-purple-500 text-white font-bold py-2 px-4 rounded">
                     CRIAR MEU PRIMEIRO POST
                   </button>
                 </Link>

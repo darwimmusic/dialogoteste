@@ -40,7 +40,7 @@ export const NewsPage: React.FC = () => {
       ) : (
         <div className="flex flex-col space-y-6">
           {articles.map(article => (
-            <Link to={`/news/${article.id}`} key={article.id} className="flex bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-blue-500/50 transition-shadow duration-300 w-full">
+            <Link to={`/news/${article.id}`} key={article.id} className="flex bg-gray-800/50 rounded-lg overflow-hidden shadow-lg hover:shadow-purple-500/50 transition-shadow duration-300 w-full">
               <img src={article.coverImageUrl} alt={article.title} className="w-1/3 h-auto object-cover hidden md:block" />
               <div className="p-6 flex flex-col justify-between">
                 <div>

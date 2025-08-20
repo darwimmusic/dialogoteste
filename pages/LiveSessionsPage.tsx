@@ -163,7 +163,7 @@ export const LiveSessionsPage: React.FC = () => {
               Encerrar Aula
             </button>
           ) : (
-            <button onClick={startLiveSession} className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+            <button onClick={startLiveSession} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
               Iniciar Aula ao Vivo
             </button>
           )}

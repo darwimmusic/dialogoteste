@@ -6,6 +6,8 @@ import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { getToken } from '../services/agoraService';
 import { MeetUI } from '../components/MeetUI';
 import { LiveChat } from '../components/LiveChat';
+import { UserList } from '../components/UserList';
+import { LiveIndicator } from '../components/LiveIndicator';
 
 const APP_ID = import.meta.env.VITE_AGORA_APP_ID;
 
@@ -18,6 +20,7 @@ export const LiveSessionsPage: React.FC = () => {
   const [liveSessionData, loading] = useDocumentData(liveSessionRef);
 
   useEffect(() => {
+    // Logic for students to join the call
     if (!isAdmin && liveSessionData?.isLive && user && liveSessionData.channelName) {
       getToken(liveSessionData.channelName, user).then(fetchedToken => {
         if (fetchedToken) {
@@ -25,10 +28,18 @@ export const LiveSessionsPage: React.FC = () => {
           setIsInCall(true);
         }
       });
-    } else {
+    } else if (!isAdmin) {
       setIsInCall(false);
     }
+    // Admin joining logic is handled by startLiveSession and rejoinLiveSession
   }, [liveSessionData, user, isAdmin]);
+
+  useEffect(() => {
+    // Auto-rejoin for admin when unpausing
+    if (isAdmin && liveSessionData?.isLive && !liveSessionData.isPaused && !isInCall) {
+      rejoinLiveSession();
+    }
+  }, [liveSessionData, isAdmin, isInCall]);
 
   const startLiveSession = async () => {
     if (!user) return;
@@ -76,14 +87,20 @@ export const LiveSessionsPage: React.FC = () => {
             channelName={liveSessionData.channelName}
             token={token}
             uid={user.uid}
+            displayName={user.displayName || 'Anonymous'}
             isAdmin={isAdmin}
             isPaused={liveSessionData?.isPaused || false}
             onPause={togglePauseSession}
             onLeave={stopLiveSession}
           />
         </div>
-        <div className="w-96 bg-gray-900">
-          <LiveChat sessionId={liveSessionData.channelName} />
+        <div className="w-96 bg-gray-900 flex flex-col">
+          <div className="h-1/2">
+            <LiveChat key={liveSessionData.channelName} sessionId={liveSessionData.channelName} />
+          </div>
+          <div className="h-1/2 border-t border-gray-700">
+            <UserList sessionId={liveSessionData.channelName} />
+          </div>
         </div>
       </div>
     );
@@ -112,7 +129,8 @@ export const LiveSessionsPage: React.FC = () => {
   }
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-8 relative">
+      <LiveIndicator />
       <h1 className="text-4xl font-bold text-white mb-4">Aula ao Vivo</h1>
       
       {isAdmin && (

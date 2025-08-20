@@ -9,21 +9,23 @@ import AgoraRTC, {
 import { VideoGrid } from './VideoGrid';
 import { Controls } from './Controls';
 import { VolumeIndicator } from './VolumeIndicator';
+import { ref, set, onDisconnect, serverTimestamp } from 'firebase/database';
+import { rtdb } from '../services/firebase';
 
 interface MeetUIProps {
   appId: string;
   channelName: string;
   token: string;
   uid: string;
+  displayName: string;
   isAdmin: boolean;
   isPaused: boolean;
   onPause: () => void;
   onLeave: () => void;
 }
 
-const client: IAgoraRTCClient = AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' });
-
-export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, isAdmin, isPaused, onPause, onLeave }) => {
+export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, displayName, isAdmin, isPaused, onPause, onLeave }) => {
+  const [client] = useState(() => AgoraRTC.createClient({ mode: 'rtc', codec: 'vp8' }));
   const [localAudioTrack, setLocalAudioTrack] = useState<IMicrophoneAudioTrack | null>(null);
   const [localVideoTrack, setLocalVideoTrack] = useState<ICameraVideoTrack | null>(null);
   const [remoteUsers, setRemoteUsers] = useState<IAgoraRTCRemoteUser[]>([]);
@@ -33,35 +35,18 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
   const [screenTrack, setScreenTrack] = useState<ILocalVideoTrack | null>(null);
 
   useEffect(() => {
-    const initTracks = async () => {
-      try {
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        const videoTrack = await AgoraRTC.createCameraVideoTrack();
-        setLocalAudioTrack(audioTrack);
-        setLocalVideoTrack(videoTrack);
-      } catch (error) {
-        console.error('Failed to create local tracks', error);
-      }
-    };
-
-    initTracks();
-  }, []);
-
-  useEffect(() => {
-    const joinAndPublish = async () => {
-      try {
-        await client.join(appId, channelName, token, uid);
-        if (localAudioTrack && localVideoTrack) {
-          await client.publish([localAudioTrack, localVideoTrack]);
-        }
-      } catch (error) {
-        console.error('Failed to join channel and publish:', error);
-      }
-    };
+    const participantRef = ref(rtdb, `liveSessions/current/participants/${uid}`);
 
     const handleUserPublished = async (user: IAgoraRTCRemoteUser, mediaType: 'audio' | 'video') => {
       await client.subscribe(user, mediaType);
-      setRemoteUsers(prevUsers => [...prevUsers, user]);
+      if (mediaType === 'video') {
+        setRemoteUsers(prevUsers => {
+          if (prevUsers.find(u => u.uid === user.uid)) {
+            return prevUsers;
+          }
+          return [...prevUsers, user];
+        });
+      }
       if (mediaType === 'audio') {
         user.audioTrack?.play();
       }
@@ -71,17 +56,46 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
       setRemoteUsers(prevUsers => prevUsers.filter(u => u.uid !== user.uid));
     };
 
-    client.on('user-published', handleUserPublished);
-    client.on('user-unpublished', handleUserUnpublished);
+    const joinChannel = async () => {
+      client.on('user-published', handleUserPublished);
+      client.on('user-unpublished', handleUserUnpublished);
 
-    if (localAudioTrack && localVideoTrack) {
-      joinAndPublish();
-    }
+      if (isAdmin) {
+        await client.join(appId, channelName, token, uid);
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        const videoTrack = await AgoraRTC.createCameraVideoTrack();
+        setLocalAudioTrack(audioTrack);
+        setLocalVideoTrack(videoTrack);
+        await client.publish([audioTrack, videoTrack]);
+      } else {
+        await client.setClientRole('audience');
+        await client.join(appId, channelName, token, uid);
+        // Student only needs to create their own audio track to mute/unmute
+        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+        setLocalAudioTrack(audioTrack);
+        await client.publish([audioTrack]);
+      }
+      
+      // Set presence
+      const presenceData = {
+        uid,
+        displayName: displayName,
+        joinedAt: serverTimestamp(),
+      };
+      await set(participantRef, presenceData);
+      onDisconnect(participantRef).remove();
+    };
+
+    joinChannel().catch(console.error);
 
     return () => {
+      localAudioTrack?.close();
+      localVideoTrack?.close();
+      screenTrack?.close();
+      setRemoteUsers([]);
       client.leave();
     };
-  }, [appId, channelName, token, uid, localAudioTrack, localVideoTrack]);
+  }, [appId, channelName, token, uid, isAdmin, client]);
 
   const handleToggleAudio = async () => {
     if (localAudioTrack) {

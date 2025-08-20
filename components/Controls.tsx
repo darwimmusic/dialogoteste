@@ -42,6 +42,31 @@ export const Controls: React.FC<ControlsProps> = ({
   isPaused,
   isAdmin,
 }) => {
+  if (!isAdmin) {
+    return (
+      <div className="absolute bottom-0 left-0 w-full bg-gray-900 bg-opacity-70 flex justify-center items-center p-4 z-50">
+        <div className="flex items-center space-x-6">
+          <ControlButton
+            onClick={onToggleAudio}
+            className={isAudioEnabled ? 'bg-blue-600' : 'bg-gray-700'}
+            ariaLabel={isAudioEnabled ? 'Mute microphone' : 'Unmute microphone'}
+            label="Microfone"
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M5 7a5 5 0 0110 0v1h-1.172l-2-2H15V7a5 5 0 01-10 0v.172l-2 2V7zm-2.121 0A7.002 7.002 0 0110 3a7 7 0 017 7v1h1a1 1 0 011 1v2a1 1 0 01-1 1h-1.172l-2-2H18V9h-1v2.172l-2-2V9h-1v2.172l-2-2V9h-1v2.172l-2-2V9H8v2.172l-2-2V9H5v2.172l-2-2V9H2a1 1 0 01-1-1V8a1 1 0 011-1h1V7zM3.293 1.293a1 1 0 011.414 0L18 14.586a1 1 0 01-1.414 1.414L3.293 2.707a1 1 0 010-1.414z"/></svg>
+          </ControlButton>
+          <ControlButton
+            onClick={onLeave}
+            className="bg-red-600"
+            ariaLabel="Leave call"
+            label="Sair da Aula"
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd"/></svg>
+          </ControlButton>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="absolute bottom-0 left-0 w-full bg-gray-900 bg-opacity-70 flex justify-center items-center p-4 z-50">
       <div className="flex items-center space-x-6">

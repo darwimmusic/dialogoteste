@@ -68,12 +68,8 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
         setLocalVideoTrack(videoTrack);
         await client.publish([audioTrack, videoTrack]);
       } else {
-        await client.setClientRole('audience');
         await client.join(appId, channelName, token, uid);
-        // Student only needs to create their own audio track to mute/unmute
-        const audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-        setLocalAudioTrack(audioTrack);
-        await client.publish([audioTrack]);
+        await client.setClientRole('audience');
       }
       
       // Set presence

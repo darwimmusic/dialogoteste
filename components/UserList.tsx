@@ -13,7 +13,7 @@ interface Participant {
 }
 
 export const UserList: React.FC<UserListProps> = ({ sessionId }) => {
-  const participantsRef = ref(rtdb, `liveSessions/current/participants`);
+  const participantsRef = ref(rtdb, `liveSessions/${sessionId}/participants`);
   const [participants, loading] = useListVals<Participant>(participantsRef);
 
   return (

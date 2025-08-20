@@ -151,29 +151,26 @@ export const completeLesson = async (uid: string, lessonId: string): Promise<boo
   // Adiciona a aula à lista de concluídas
   const updatedCompletedLessons = [...(userProfile.completedLessons || []), lessonId];
 
-  const newXp = (userProfile.xp % XP_TO_LEVEL_UP) + XP_PER_LESSON;
-  const levelsGained = Math.floor(newXp / XP_TO_LEVEL_UP);
-
+  // Calcula o novo XP total e o novo nível
+  const newTotalXp = userProfile.xp + XP_PER_LESSON;
+  const newLevel = Math.floor(newTotalXp / XP_TO_LEVEL_UP) + 1;
+  
   const updates: { [key: string]: any } = {
     completedLessons: updatedCompletedLessons,
-    xp: increment(XP_PER_LESSON),
+    xp: newTotalXp,
   };
 
-  if (levelsGained > 0) {
-    const newLevel = Math.min(userProfile.level + levelsGained, MAX_LEVEL);
-    const newTitle = getTitleForLevel(newLevel);
-    updates.level = newLevel;
+  // Verifica se o usuário subiu de nível
+  if (newLevel > userProfile.level) {
+    updates.level = Math.min(newLevel, MAX_LEVEL);
+    const newTitle = getTitleForLevel(updates.level);
+    
     if (newTitle && newTitle !== userProfile.title) {
       updates.title = newTitle;
       // Concede a conquista de elo
       const eloAchievementId = `elo_${newTitle.toLowerCase().replace(' ', '_')}`;
       grantAchievement(uid, eloAchievementId);
     }
-  }
-  
-  // Concede a conquista de Elo Ferro ao atingir o nível 1
-  if (userProfile.level === 1 && levelsGained > 0) {
-    grantAchievement(uid, 'elo_ferro');
   }
   
   await updateDoc(userRef, updates);

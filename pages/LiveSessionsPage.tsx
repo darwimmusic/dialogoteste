@@ -69,8 +69,8 @@ export const LiveSessionsPage: React.FC = () => {
 
   if (isInCall && token && user && liveSessionData?.channelName) {
     return (
-      <div className="flex h-screen">
-        <div className="flex-grow">
+      <div className="flex h-screen bg-gray-800 text-white">
+        <div className="flex-grow flex flex-col">
           <MeetUI
             appId={APP_ID}
             channelName={liveSessionData.channelName}
@@ -79,11 +79,34 @@ export const LiveSessionsPage: React.FC = () => {
             isAdmin={isAdmin}
             isPaused={liveSessionData?.isPaused || false}
             onPause={togglePauseSession}
+            onLeave={stopLiveSession}
           />
         </div>
         <div className="w-96 bg-gray-900">
           <LiveChat sessionId={liveSessionData.channelName} />
         </div>
+      </div>
+    );
+  }
+
+  const rejoinLiveSession = async () => {
+    if (!user || !liveSessionData || !liveSessionData.channelName) return;
+    const fetchedToken = await getToken(liveSessionData.channelName, user);
+    if (fetchedToken) {
+      setToken(fetchedToken);
+      setIsInCall(true);
+    } else {
+      alert('Could not get access token to rejoin.');
+    }
+  };
+
+  if (isAdmin && liveSessionData?.isLive && liveSessionData.hostId === user?.uid && !isInCall) {
+    return (
+      <div className="container mx-auto p-8 text-center">
+        <h1 className="text-4xl font-bold text-white mb-4">Uma live está em andamento.</h1>
+        <button onClick={rejoinLiveSession} className="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg text-xl">
+          VOLTAR AO AMBIENTE DA LIVE EM ANDAMENTO
+        </button>
       </div>
     );
   }

@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { addComment, getCommentsForPost, deleteComment, getCommentsByUser, toggleCommentLike } from '../services/forumService';
+import { addComment, getCommentsForPost, deleteComment, toggleCommentLike } from '../services/forumService';
 import { getUserProfile, updateUserProfile } from '../services/userService';
 import { grantAchievement } from '../services/achievementService';
+import { sendFriendRequest } from '../services/friendService';
 import type { ForumComment, UserProfile } from '../types';
 import { LoadingSpinner } from './icons/LoadingSpinner';
-import { TiptapEditor } from './TiptapEditor'; // Usaremos o editor para comentários também
+import { TiptapEditor } from './TiptapEditor';
+import UserActionPopup from './UserActionPopup';
+import eventEmitter from '../utils/eventEmitter';
+import { useNavigate } from 'react-router-dom';
 
 interface CommentWithAuthor extends ForumComment {
   author: UserProfile | null;
@@ -16,9 +20,10 @@ interface CommentProps {
   comment: CommentWithAuthor;
   postId: string;
   onReplySuccess: () => void;
+  onUserSelect: (user: UserProfile) => void;
 }
 
-const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) => {
+const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess, onUserSelect }) => {
   const [showReply, setShowReply] = useState(false);
   const [replyContent, setReplyContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,10 +103,14 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
   return (
     <div className="ml-4 pl-4 border-l-2 border-gray-700">
       <div className="flex items-start space-x-3">
-        <img src={comment.author?.photoURL || 'https://via.placeholder.com/150'} alt="avatar" className="w-8 h-8 rounded-full" />
+        <button onClick={() => comment.author && onUserSelect(comment.author)} className="flex-shrink-0 focus:outline-none">
+          <img src={comment.author?.photoURL || 'https://via.placeholder.com/150'} alt="avatar" className="w-8 h-8 rounded-full" />
+        </button>
         <div className="flex-1">
           <div className="flex justify-between items-center">
-            <p className="font-semibold text-sm text-white">{comment.author?.displayName}</p>
+            <button onClick={() => comment.author && onUserSelect(comment.author)} className="font-semibold text-sm text-white hover:underline focus:outline-none">
+              {comment.author?.displayName}
+            </button>
             {user && user.uid === comment.authorId && (
               <button 
                 onClick={handleDelete} 
@@ -129,7 +138,7 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
         </div>
       )}
       {comment.replies.map(reply => (
-        <Comment key={reply.id} comment={reply} postId={postId} onReplySuccess={onReplySuccess} />
+        <Comment key={reply.id} comment={reply} postId={postId} onReplySuccess={onReplySuccess} onUserSelect={onUserSelect} />
       ))}
     </div>
   );
@@ -139,9 +148,11 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
 export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
   const [comments, setComments] = useState<CommentWithAuthor[]>([]);
   const [rootComment, setRootComment] = useState('');
+  const [selectedUser, setSelectedUser] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const fetchComments = async () => {
     setIsLoading(true);
@@ -207,12 +218,37 @@ export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
 
   if (isLoading) return <LoadingSpinner />;
 
+  const handleAddFriend = async (uid: string) => {
+    try {
+      await sendFriendRequest(uid);
+      alert('Pedido de amizade enviado!');
+      setSelectedUser(null);
+    } catch (error: any) {
+      alert(`Erro: ${error.message}`);
+    }
+  };
+
+  const handleSendMessage = (uid: string) => {
+    const friend = { uid, displayName: selectedUser?.displayName || '', photoURL: selectedUser?.photoURL || '' };
+    eventEmitter.emit('start-chat', friend);
+    setSelectedUser(null);
+    navigate('/social');
+  };
+
   return (
     <div className="mt-8">
+      {selectedUser && (
+        <UserActionPopup 
+          targetUser={selectedUser}
+          onClose={() => setSelectedUser(null)}
+          onAddFriend={handleAddFriend}
+          onSendMessage={handleSendMessage}
+        />
+      )}
       <h2 className="text-2xl font-bold border-b border-gray-700 pb-2 mb-4">Comentários</h2>
       <div className="space-y-4">
         {comments.map(comment => (
-          <Comment key={comment.id} comment={comment} postId={postId} onReplySuccess={fetchComments} />
+          <Comment key={comment.id} comment={comment} postId={postId} onReplySuccess={fetchComments} onUserSelect={setSelectedUser} />
         ))}
       </div>
       <div className="mt-6">

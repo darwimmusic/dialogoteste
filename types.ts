@@ -110,3 +110,25 @@ export interface ForumPost {
   upvotes: number;
   commentCount: number;
 }
+
+// --- Tipos do Sistema Social ---
+
+export interface Friend {
+  uid: string;
+  displayName: string;
+  photoURL?: string;
+}
+
+export interface FriendRequest {
+  senderId: string;
+  displayName: string;
+  photoURL?: string;
+  timestamp: any; // Firestore Timestamp
+}
+
+export interface UserChatMessage {
+  id?: string;
+  senderId: string;
+  text: string;
+  timestamp: any; // Firestore Timestamp
+}

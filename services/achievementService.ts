@@ -8,7 +8,7 @@ import {
 } from "firebase/firestore";
 import type { UserProfile, StandardAchievement, Badge } from "../types";
 import { getUserProfile } from "./userService";
-import { achievementEmitter } from "../utils/eventEmitter";
+import eventEmitter from "../utils/eventEmitter";
 
 const db = getFirestore();
 
@@ -67,7 +67,7 @@ export const grantAchievement = async (
       xp: increment(achievement.xp),
     });
     console.log(`Conquista "${achievement.name}" concedida ao usuário ${uid}.`);
-    achievementEmitter.emit('achievementGranted', newBadge);
+    eventEmitter.emit('achievementGranted', newBadge);
     return true;
   } catch (error) {
     console.error(

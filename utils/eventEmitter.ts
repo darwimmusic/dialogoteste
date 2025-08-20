@@ -15,4 +15,5 @@ class EventEmitter {
   }
 }
 
-export const achievementEmitter = new EventEmitter();
+const eventEmitter = new EventEmitter();
+export default eventEmitter;

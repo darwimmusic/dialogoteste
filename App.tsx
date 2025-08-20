@@ -18,6 +18,7 @@ import { AdminPage } from './pages/AdminPage';
 import { useAuth } from './hooks/useAuth';
 import { LoadingSpinner } from './components/icons/LoadingSpinner';
 import { NotificationProvider } from './contexts/NotificationContext';
+import SocialPage from './pages/SocialPage';
 
 function App() {
   const { user, isAdmin, loading } = useAuth();
@@ -46,7 +47,9 @@ function App() {
                   <Route path="/news/edit/:newsId" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
                   <Route path="/news/:newsId" element={<NewsDetailPage />} />
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/profile/:userId" element={<ProfilePage />} />
                   <Route path="/course/:courseId" element={<LessonPlayerPage />} />
+                  <Route path="/social" element={<SocialPage />} />
                   <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" />} />
                 </>
               )}

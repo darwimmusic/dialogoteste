@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { NotificationPopup } from '../components/NotificationPopup';
 import type { Badge } from '../types';
-import { achievementEmitter } from '../utils/eventEmitter';
+import eventEmitter from '../utils/eventEmitter';
 
 interface NotificationContextType {
   showAchievementNotification: (badge: Badge) => void;
@@ -29,7 +29,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       setNotification(badge);
     };
 
-    achievementEmitter.on('achievementGranted', handleAchievementGranted);
+    eventEmitter.on('achievementGranted', handleAchievementGranted);
 
     // Não há necessidade de remover o listener, pois o contexto vive durante toda a aplicação
   }, []);

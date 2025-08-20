@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { getUserProfile, uploadProfilePicture } from '../services/userService';
-import { getPostsByAuthor } from '../services/forumService'; // Importa a nova função
+import { getPostsByAuthor } from '../services/forumService';
 import type { UserProfile, ForumPost } from '../types';
 import { LoadingPage } from './LoadingPage';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 
 const ProfilePage: React.FC = () => {
+  const { userId } = useParams<{ userId?: string }>();
   const { user } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userPosts, setUserPosts] = useState<(ForumPost & { id: string })[]>([]);
@@ -15,19 +16,23 @@ const ProfilePage: React.FC = () => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isOwnProfile = !userId || userId === user?.uid;
 
   useEffect(() => {
     const fetchProfileData = async () => {
-      if (user) {
+      const profileUid = userId || user?.uid;
+      if (profileUid) {
+        setLoading(true);
         try {
           const [profile, posts] = await Promise.all([
-            getUserProfile(user.uid),
-            getPostsByAuthor(user.uid)
+            getUserProfile(profileUid),
+            getPostsByAuthor(profileUid)
           ]);
           setUserProfile(profile);
           setUserPosts(posts);
         } catch (error) {
           console.error("Erro ao buscar dados do perfil:", error);
+          setError("Não foi possível carregar os dados do perfil.");
         } finally {
           setLoading(false);
         }
@@ -37,7 +42,7 @@ const ProfilePage: React.FC = () => {
     };
 
     fetchProfileData();
-  }, [user]);
+  }, [userId, user]);
 
   if (loading) {
     return <LoadingPage />;
@@ -98,21 +103,25 @@ const ProfilePage: React.FC = () => {
             <img
               src={userProfile.photoURL || 'https://via.placeholder.com/150'}
               alt="Foto do Perfil"
-              className="w-32 h-32 rounded-full border-4 border-purple-500 object-cover transition-opacity duration-300 group-hover:opacity-50"
+              className="w-32 h-32 rounded-full border-4 border-purple-500 object-cover"
             />
-            <div 
-              className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              {uploading ? <LoadingSpinner /> : <span className="text-white text-lg font-bold">Alterar</span>}
-            </div>
-            <input
-              type="file"
-              ref={fileInputRef}
-              hidden
-              accept="image/png, image/jpeg"
-              onChange={handlePhotoUpload}
-            />
+            {isOwnProfile && (
+              <>
+                <div 
+                  className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {uploading ? <LoadingSpinner /> : <span className="text-white text-lg font-bold">Alterar</span>}
+                </div>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  hidden
+                  accept="image/png, image/jpeg"
+                  onChange={handlePhotoUpload}
+                />
+              </>
+            )}
           </div>
           <div className="flex-grow text-center md:text-left">
             <h1 className="text-3xl font-bold text-white">{userProfile.displayName}</h1>
@@ -163,7 +172,7 @@ const ProfilePage: React.FC = () => {
 
         {/* Seção de Posts no Fórum */}
         <div className="mt-8">
-          <h2 className="text-2xl font-bold mb-4 text-white">Meus Posts no Fórum</h2>
+          <h2 className="text-2xl font-bold mb-4 text-white">{isOwnProfile ? 'Meus Posts no Fórum' : `Posts de ${userProfile.displayName}`}</h2>
           <div className="space-y-4">
             {userPosts.length > 0 ? (
               userPosts.slice(0, 5).map(post => (

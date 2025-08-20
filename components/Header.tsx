@@ -11,6 +11,7 @@ import { HomeIcon } from './icons/HomeIcon';
 import { ForumIcon } from './icons/ForumIcon';
 import { LiveIcon } from './icons/LiveIcon';
 import { NewsIcon } from './icons/NewsIcon';
+import SocialIcon from './icons/SocialIcon';
 import { UserIcon } from './icons/UserIcon'; // Adicionado para consistência
 
 export const Header: React.FC = () => {
@@ -61,6 +62,9 @@ export const Header: React.FC = () => {
               </NavLink>
               <NavLink to="/news" style={activeLinkStyle} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white">
                 <NewsIcon /> Notícias
+              </NavLink>
+              <NavLink to="/social" style={activeLinkStyle} className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700/50 hover:text-white">
+                <SocialIcon /> Social
               </NavLink>
               
               {/* Lógica condicional: O link de Admin só aparece se isAdmin for true */}

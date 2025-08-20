@@ -3,6 +3,8 @@ import { useAuth } from '../hooks/useAuth';
 import { ref, push, serverTimestamp } from 'firebase/database';
 import { rtdb } from '../services/firebase';
 import { useList } from 'react-firebase-hooks/database';
+import { grantAchievement } from '../services/achievementService';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 
 interface LiveChatProps {
   sessionId: string;
@@ -32,6 +34,13 @@ export const LiveChat: React.FC<LiveChatProps> = ({ sessionId }) => {
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (text.trim() === '' || !user) return;
+
+    // Conquista: Primeira mensagem no chat ao vivo
+    const userProfile = await getUserProfile(user.uid);
+    if (userProfile && !userProfile.hasSentLiveChatMessage) {
+      await updateUserProfile(user.uid, { hasSentLiveChatMessage: true });
+      await grantAchievement(user.uid, 'first_live_chat_message');
+    }
 
     await push(messagesRef, {
       authorId: user.uid,

@@ -7,6 +7,7 @@ import {
   collection,
   getDocs,
 } from "firebase/firestore";
+import { grantAchievement } from "./achievementService";
 import {
   getStorage,
   ref,
@@ -164,6 +165,9 @@ export const completeLesson = async (uid: string, lessonId: string): Promise<boo
     updates.level = newLevel;
     if (newTitle && newTitle !== userProfile.title) {
       updates.title = newTitle;
+      // Concede a conquista de elo
+      const eloAchievementId = `elo_${newTitle.toLowerCase().replace(' ', '_')}`;
+      grantAchievement(uid, eloAchievementId);
     }
   }
   

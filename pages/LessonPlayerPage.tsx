@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { getCourseWithLessons, updateLessonSummary } from '../services/courseService';
 import { completeLesson, awardBadgeIfCourseCompleted } from '../services/userService'; // Funções de conclusão
+import { grantAchievement } from '../services/achievementService'; // Importa o serviço de conquistas
 import { useAuth } from '../hooks/useAuth'; // Hook de autenticação
 import { generateLessonSummary } from '../services/geminiService';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
@@ -11,7 +12,6 @@ import { VideoPlayer } from '../components/VideoPlayer';
 import { TranscriptViewer } from '../components/TranscriptViewer';
 import { AiTutorChat } from '../components/AiTutorChat';
 import { LessonAttachments } from '../components/LessonAttachments';
-import { NotificationPopup } from '../components/NotificationPopup'; // Importa o novo componente
 import { getUserProfile } from '../services/userService'; // Precisa para verificar aulas concluídas
 import type { Course, Lesson } from '../types';
 
@@ -22,7 +22,6 @@ export const LessonPlayerPage: React.FC = () => {
   const [lessonSummary, setLessonSummary] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  const [completionStatus, setCompletionStatus] = useState<string | null>(null); // Para o pop-up
   const { user } = useAuth(); // Pega o usuário logado
 
   useEffect(() => {
@@ -79,25 +78,33 @@ export const LessonPlayerPage: React.FC = () => {
   const handleCompleteLesson = async () => {
     if (!user || !currentLesson || !courseId) return;
 
+    const userProfileBeforeCompletion = await getUserProfile(user.uid);
+    const wasFirstLesson = (userProfileBeforeCompletion?.completedLessons?.length || 0) === 0;
+
     const xpGained = await completeLesson(user.uid, currentLesson.id);
 
     if (xpGained) {
-      // Verifica se o curso foi concluído para dar a badge
-      const userProfile = await getUserProfile(user.uid);
-      const courseLessons = course?.lessons.map(l => l.id) || [];
-      // A lógica de `completeLesson` já atualizou o perfil, então buscamos de novo
+      // Conquista: Primeira aula assistida
+      if (wasFirstLesson) {
+        await grantAchievement(user.uid, 'first_lesson_watched');
+      }
+
+      // Verifica se o curso foi concluído
       const updatedProfile = await getUserProfile(user.uid);
+      const courseLessons = course?.lessons.map(l => l.id) || [];
       const completedLessons = updatedProfile?.completedLessons || [];
       const allLessonsCompleted = courseLessons.every(lessonId => completedLessons.includes(lessonId));
 
       if (allLessonsCompleted) {
         await awardBadgeIfCourseCompleted(user.uid, courseId);
-        setCompletionStatus(`Curso Concluído! Badge "${course?.badge?.name}" desbloqueada!`);
-      } else {
-        setCompletionStatus("+20 XP!");
+
+        // Conquista: Primeiro curso completo
+        if (updatedProfile?.completedCourses?.length === 1) {
+          await grantAchievement(user.uid, 'first_course_completed');
+        }
       }
-    } 
-    // Não mostramos mensagem se a aula já foi concluída para não poluir a tela
+    }
+    // Não mostramos mensagem se a aula já foi concluída
   };
 
   if (isLoading) return <div className="flex justify-center items-center h-screen"><LoadingSpinner /></div>;
@@ -106,15 +113,6 @@ export const LessonPlayerPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 max-w-screen-2xl">
-      {/* Notificação Pop-up */}
-      {completionStatus && (
-        <NotificationPopup 
-          message={completionStatus} 
-          onClose={() => setCompletionStatus(null)}
-          duration={2000}
-        />
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Coluna Principal: Player e Conteúdo da Aula */}
         <div className="lg:col-span-3 flex flex-col gap-6">
@@ -158,6 +156,7 @@ export const LessonPlayerPage: React.FC = () => {
                 summary={lessonSummary}
                 rawTranscript={currentLesson.transcript}
                 lessonTitle={currentLesson.title}
+                lessonId={currentLesson.id}
               />
             )}
         </div>

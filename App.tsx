@@ -17,6 +17,7 @@ import { LoginPage } from './pages/LoginPage';
 import { AdminPage } from './pages/AdminPage';
 import { useAuth } from './hooks/useAuth';
 import { LoadingSpinner } from './components/icons/LoadingSpinner';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 function App() {
   const { user, isAdmin, loading } = useAuth();
@@ -27,33 +28,32 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-[#181818] text-gray-100 font-sans">
-        {user && <Header />}
-        <main>
-          <Routes>
-            {!user && <Route path="*" element={<LoginPage />} />}
-            {user && (
-              <>
-                <Route path="/" element={<DashboardPage />} />
-                <Route path="/forum" element={<ForumPage />} />
-                <Route path="/forum/create-post" element={<PostEditorPage />} /> {/* Rota simplificada */}
-                <Route path="/forum/post/:postId" element={<PostPage />} /> {/* Rota simplificada */}
-                <Route path="/live" element={<LiveSessionsPage />} />
-                <Route path="/news" element={<NewsPage />} />
-                <Route path="/news/create" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
-                <Route path="/news/edit/:newsId" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
-                <Route path="/news/:newsId" element={<NewsDetailPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                
-                {/* ROTA ATUALIZADA: Leva para o player de aula, que agora é a página de detalhes do curso */}
-                <Route path="/course/:courseId" element={<LessonPlayerPage />} />
-                
-                <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" />} />
-              </>
-            )}
-          </Routes>
-        </main>
-      </div>
+      <NotificationProvider>
+        <div className="min-h-screen bg-[#181818] text-gray-100 font-sans">
+          {user && <Header />}
+          <main>
+            <Routes>
+              {!user && <Route path="*" element={<LoginPage />} />}
+              {user && (
+                <>
+                  <Route path="/" element={<DashboardPage />} />
+                  <Route path="/forum" element={<ForumPage />} />
+                  <Route path="/forum/create-post" element={<PostEditorPage />} />
+                  <Route path="/forum/post/:postId" element={<PostPage />} />
+                  <Route path="/live" element={<LiveSessionsPage />} />
+                  <Route path="/news" element={<NewsPage />} />
+                  <Route path="/news/create" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
+                  <Route path="/news/edit/:newsId" element={isAdmin ? <NewsEditorPage /> : <Navigate to="/news" />} />
+                  <Route path="/news/:newsId" element={<NewsDetailPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/course/:courseId" element={<LessonPlayerPage />} />
+                  <Route path="/admin" element={isAdmin ? <AdminPage /> : <Navigate to="/" />} />
+                </>
+              )}
+            </Routes>
+          </main>
+        </div>
+      </NotificationProvider>
     </Router>
   );
 }

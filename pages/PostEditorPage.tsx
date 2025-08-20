@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { createPost } from '../services/forumService';
+import { useNavigate } from 'react-router-dom';
+import { createPost, getPostsByAuthor } from '../services/forumService';
 import { useAuth } from '../hooks/useAuth';
+import { grantAchievement } from '../services/achievementService';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 import { TiptapEditor } from '../components/TiptapEditor'; // Importa o novo editor
 
@@ -30,11 +31,21 @@ export const PostEditorPage: React.FC = () => {
     setIsLoading(true);
     setError(null);
     try {
+      // Verifica se é o primeiro post do usuário
+      const userPosts = await getPostsByAuthor(user.uid);
+      const isFirstPost = userPosts.length === 0;
+
       await createPost({
         authorId: user.uid,
         title,
         content,
       });
+
+      // Concede a conquista se for o primeiro post
+      if (isFirstPost) {
+        await grantAchievement(user.uid, 'first_forum_post');
+      }
+
       navigate(`/forum`); // Redireciona de volta para o fórum
     } catch (err) {
       setError("Não foi possível salvar o post.");

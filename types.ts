@@ -5,6 +5,10 @@ export interface Badge {
   imageUrl: string;
 }
 
+export interface StandardAchievement extends Badge {
+  xp: number;
+}
+
 export interface UserProfile {
   uid: string;
   displayName: string;
@@ -22,6 +26,13 @@ export interface UserProfile {
   titleBadgeUrl?: string; // URL da imagem da badge de título
   completedCourses: string[];
   completedLessons?: string[];
+  readNews?: string[]; // Array de IDs de notícias lidas
+  downloadedTranscripts?: string[]; // Array de IDs de aulas cuja transcrição foi baixada
+  hasInteractedWithAITutor?: boolean;
+  hasLikedComment?: boolean;
+  hasSearchedCourse?: boolean;
+  attendedLiveSessions?: string[]; // Array de IDs de sessões ao vivo
+  hasSentLiveChatMessage?: boolean;
   badges: Badge[];
   isAdmin: boolean;
   createdAt: any; // ou um tipo mais específico se você usar Timestamps
@@ -73,6 +84,7 @@ export interface ForumComment {
   content: string;
   createdAt: any; // Firestore Timestamp
   upvotes: number;
+  likedBy: string[]; // Array de user UIDs
   postId: string;
   parentId?: string | null;
 }

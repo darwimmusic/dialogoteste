@@ -12,14 +12,18 @@ import {
   getAllCourses,
   updateCourseFeaturedStatus,
   getTitleBadges,
-  updateTitleBadge
+  updateTitleBadge,
+  getStandardAchievements,
+  createOrUpdateStandardAchievement,
+  deleteStandardAchievement,
+  seedInitialAchievements
 } from '../services/adminService';
 import { addOrUpdateBadgeForCourse } from '../services/courseService'; // Importa a nova função
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
-import type { Theme, Course, Lesson, Attachment } from '../types';
+import type { Theme, Course, Lesson, Attachment, StandardAchievement } from '../types';
 
 // Para controlar qual formulário está visível
-type AdminView = 'theme' | 'course' | 'lesson' | 'manage_attachments' | 'manage_featured' | 'manage_badges' | 'manage_title_badges' | null;
+type AdminView = 'theme' | 'course' | 'lesson' | 'manage_attachments' | 'manage_featured' | 'manage_badges' | 'manage_title_badges' | 'manage_standard_achievements' | null;
 
 const ALL_TITLES = [
   "Ferro", "Bronze", "Prata", "Ouro", "Platina", 
@@ -43,6 +47,8 @@ export const AdminPage: React.FC = () => {
   const [formData, setFormData] = useState({ title: '', description: '', coverImageUrl: '', videoUrl: '' });
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [titleBadges, setTitleBadges] = useState<Map<string, string>>(new Map());
+  const [standardAchievements, setStandardAchievements] = useState<StandardAchievement[]>([]);
+  const [editingAchievement, setEditingAchievement] = useState<StandardAchievement | null>(null);
   
   // Estados de UI
   const [isLoading, setIsLoading] = useState(false);
@@ -321,6 +327,22 @@ export const AdminPage: React.FC = () => {
         >
           Gerenciar Badges de Título
         </button>
+        <button
+          onClick={async () => {
+            setView('manage_standard_achievements');
+            setIsLoading(true);
+            try {
+              const achievements = await getStandardAchievements();
+              setStandardAchievements(achievements);
+            } catch (err) {
+              setError("Não foi possível carregar as conquistas padrão.");
+            }
+            setIsLoading(false);
+          }}
+          className="bg-cyan-600 hover:bg-cyan-500 text-white font-bold py-2 px-4 rounded"
+        >
+          Gerenciar Conquistas Padrão
+        </button>
       </div>
 
       {error && <p className="text-red-400 text-sm p-3 bg-red-900/50 rounded-md">{error}</p>}
@@ -479,6 +501,86 @@ export const AdminPage: React.FC = () => {
                 >
                   Salvar
                 </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* SEÇÃO PARA GERENCIAR CONQUISTAS PADRÃO */}
+      {view === 'manage_standard_achievements' && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold text-white mb-2">Gerenciar Conquistas Padrão</h3>
+          <button
+            onClick={async () => {
+              setIsLoading(true);
+              try {
+                await seedInitialAchievements();
+                const achievements = await getStandardAchievements();
+                setStandardAchievements(achievements);
+                setSuccess("Conquistas iniciais populadas com sucesso!");
+              } catch (err) {
+                setError("Falha ao popular conquistas.");
+              }
+              setIsLoading(false);
+            }}
+            className="bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded mb-4"
+          >
+            Popular Conquistas Iniciais
+          </button>
+          <div className="space-y-4">
+            {standardAchievements.map(ach => (
+              <div key={ach.id} className="p-4 bg-gray-700 rounded-md">
+                <p className="font-bold text-white">{ach.name}</p>
+                <p className="text-sm text-gray-400">{ach.description}</p>
+                <p className="text-sm text-gray-400">XP: {ach.xp}</p>
+                <div className="flex items-center space-x-2 mt-2">
+                  <input
+                    type="text"
+                    value={ach.imageUrl}
+                    onChange={(e) => {
+                      const newAchievements = standardAchievements.map(a =>
+                        a.id === ach.id ? { ...a, imageUrl: e.target.value } : a
+                      );
+                      setStandardAchievements(newAchievements);
+                    }}
+                    placeholder="URL da Imagem"
+                    className="flex-grow bg-gray-600 rounded py-1 px-2 text-white"
+                  />
+                  <button
+                    onClick={async () => {
+                      setIsLoading(true);
+                      try {
+                        await createOrUpdateStandardAchievement(ach);
+                        setSuccess(`Conquista "${ach.name}" salva!`);
+                      } catch (err) {
+                        setError("Falha ao salvar conquista.");
+                      }
+                      setIsLoading(false);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-bold py-1 px-3 rounded text-sm"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (window.confirm(`Tem certeza que deseja excluir a conquista "${ach.name}"?`)) {
+                        setIsLoading(true);
+                        try {
+                          await deleteStandardAchievement(ach.id);
+                          setStandardAchievements(prev => prev.filter(a => a.id !== ach.id));
+                          setSuccess("Conquista excluída!");
+                        } catch (err) {
+                          setError("Falha ao excluir conquista.");
+                        }
+                        setIsLoading(false);
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold py-1 px-3 rounded text-sm"
+                  >
+                    Excluir
+                  </button>
+                </div>
               </div>
             ))}
           </div>

@@ -133,6 +133,66 @@ export const getCommentsForPost = async (postId: string): Promise<(ForumComment 
 };
 
 /**
+ * Busca todos os comentários de um usuário específico em todos os posts.
+ * @param userId O ID do usuário.
+ * @returns Uma lista de comentários do usuário.
+ */
+export const getCommentsByUser = async (userId: string): Promise<(ForumComment & { id: string })[]> => {
+  try {
+    const posts = await getPosts();
+    let userComments: (ForumComment & { id: string })[] = [];
+
+    for (const post of posts) {
+      const commentsCollection = collection(db, `posts/${post.id}/comments`);
+      const q = query(commentsCollection, where("authorId", "==", userId));
+      const commentSnapshot = await getDocs(q);
+      const comments = commentSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ForumComment & { id: string }));
+      userComments = [...userComments, ...comments];
+    }
+
+    return userComments;
+  } catch (error) {
+    console.error("Erro ao buscar comentários por usuário: ", error);
+    throw new Error("Não foi possível carregar os comentários do usuário.");
+  }
+};
+
+/**
+ * Alterna o like de um usuário em um comentário.
+ * @param postId O ID do post.
+ * @param commentId O ID do comentário.
+ * @param userId O ID do usuário que está curtindo.
+ */
+export const toggleCommentLike = async (postId: string, commentId: string, userId: string): Promise<void> => {
+  const commentRef = doc(db, `posts/${postId}/comments`, commentId);
+  try {
+    const commentSnap = await getDoc(commentRef);
+    if (!commentSnap.exists()) {
+      throw new Error("Comentário não encontrado.");
+    }
+    const commentData = commentSnap.data() as ForumComment;
+    const likedBy = commentData.likedBy || [];
+    
+    if (likedBy.includes(userId)) {
+      // Remove o like
+      await updateDoc(commentRef, {
+        likedBy: likedBy.filter(uid => uid !== userId),
+        upvotes: increment(-1)
+      });
+    } else {
+      // Adiciona o like
+      await updateDoc(commentRef, {
+        likedBy: [...likedBy, userId],
+        upvotes: increment(1)
+      });
+    }
+  } catch (error) {
+    console.error("Erro ao alternar like do comentário: ", error);
+    throw new Error("Não foi possível atualizar o like do comentário.");
+  }
+};
+
+/**
  * Deleta um comentário específico.
  * @param postId O ID do post pai do comentário.
  * @param commentId O ID do comentário a ser deletado.

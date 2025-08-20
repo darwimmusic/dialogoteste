@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { addComment, getCommentsForPost, deleteComment } from '../services/forumService';
-import { getUserProfile } from '../services/userService';
+import { addComment, getCommentsForPost, deleteComment, getCommentsByUser, toggleCommentLike } from '../services/forumService';
+import { getUserProfile, updateUserProfile } from '../services/userService';
+import { grantAchievement } from '../services/achievementService';
 import type { ForumComment, UserProfile } from '../types';
 import { LoadingSpinner } from './icons/LoadingSpinner';
 import { TiptapEditor } from './TiptapEditor'; // Usaremos o editor para comentários também
@@ -24,15 +25,40 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
 
   const handleAddReply = async () => {
     if (!user || !replyContent.trim()) return;
+
+    // Verifica se é o primeiro comentário do usuário
+    const userComments = await getCommentsByUser(user.uid);
+    const isFirstComment = userComments.length === 0;
     
     await addComment(postId, {
       authorId: user.uid,
       content: replyContent,
-      parentId: comment.id
+      parentId: comment.id,
+      likedBy: [],
     });
+
+    // Concede a conquista se for o primeiro comentário
+    if (isFirstComment) {
+      await grantAchievement(user.uid, 'first_forum_comment');
+    }
+
     setReplyContent('');
     setShowReply(false);
     onReplySuccess(); // Notifica o componente pai para recarregar os comentários
+  };
+
+  const handleLike = async () => {
+    if (!user) return;
+
+    // Conquista: Primeira curtida em comentário
+    const userProfile = await getUserProfile(user.uid);
+    if (userProfile && !userProfile.hasLikedComment) {
+      await updateUserProfile(user.uid, { hasLikedComment: true });
+      await grantAchievement(user.uid, 'first_comment_like');
+    }
+
+    await toggleCommentLike(postId, comment.id, user.uid);
+    onReplySuccess(); // Recarrega para atualizar a contagem de likes
   };
 
   const handleDelete = async () => {
@@ -65,7 +91,13 @@ const Comment: React.FC<CommentProps> = ({ comment, postId, onReplySuccess }) =>
             )}
           </div>
           <div className="prose prose-invert prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: comment.content }} />
-          <button onClick={() => setShowReply(!showReply)} className="text-xs text-blue-400 mt-1">Responder</button>
+          <div className="flex items-center space-x-4 mt-2">
+            <button onClick={() => setShowReply(!showReply)} className="text-xs text-blue-400">Responder</button>
+            <button onClick={handleLike} className={`text-xs flex items-center space-x-1 ${comment.likedBy?.includes(user?.uid || '') ? 'text-red-500' : 'text-gray-400'}`}>
+              <span>❤️</span>
+              <span>{comment.upvotes || 0}</span>
+            </button>
+          </div>
         </div>
       </div>
       {showReply && (
@@ -120,11 +152,23 @@ export const CommentSection: React.FC<{ postId: string }> = ({ postId }) => {
 
   const handleAddRootComment = async () => {
     if (!user || !rootComment.trim()) return;
+
+    // Verifica se é o primeiro comentário do usuário
+    const userComments = await getCommentsByUser(user.uid);
+    const isFirstComment = userComments.length === 0;
+
     await addComment(postId, {
       authorId: user.uid,
       content: rootComment,
-      parentId: null
+      parentId: null,
+      likedBy: [],
     });
+
+    // Concede a conquista se for o primeiro comentário
+    if (isFirstComment) {
+      await grantAchievement(user.uid, 'first_forum_comment');
+    }
+
     setRootComment('');
     fetchComments(); // Recarrega tudo
   };

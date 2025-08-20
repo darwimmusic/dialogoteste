@@ -18,6 +18,7 @@ import {
 import { auth, googleProvider } from './firebase';
 import type { User } from "firebase/auth";
 import type { UserProfile } from "../types";
+import { grantAchievement } from './achievementService'; // Importa o serviço de conquistas
 
 const db = getFirestore();
 
@@ -58,6 +59,10 @@ export const createUserProfileDocument = async (user: User, additionalData: { di
       if (displayName) {
         await updateProfile(user, { displayName });
       }
+
+      // Concede as conquistas iniciais
+      await grantAchievement(uid, 'first_login');
+      await grantAchievement(uid, 'elo_ferro');
 
     } catch (error) {
       console.error('Error creating user document', error);

@@ -2,15 +2,35 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { DownloadIcon } from './icons/DownloadIcon';
+import { useAuth } from '../hooks/useAuth';
+import { grantAchievement } from '../services/achievementService';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 
 interface TranscriptViewerProps {
   summary: string;
   rawTranscript: string;
   lessonTitle: string;
+  lessonId: string;
 }
 
-export const TranscriptViewer: React.FC<TranscriptViewerProps> = ({ summary, rawTranscript, lessonTitle }) => {
-  const handleDownloadTranscript = () => {
+export const TranscriptViewer: React.FC<TranscriptViewerProps> = ({ summary, rawTranscript, lessonTitle, lessonId }) => {
+  const { user } = useAuth();
+
+  const handleDownloadTranscript = async () => {
+    if (user) {
+      const userProfile = await getUserProfile(user.uid);
+      if (userProfile && !userProfile.downloadedTranscripts?.includes(lessonId)) {
+        const wasFirstDownload = (userProfile.downloadedTranscripts?.length || 0) === 0;
+
+        const updatedDownloads = [...(userProfile.downloadedTranscripts || []), lessonId];
+        await updateUserProfile(user.uid, { downloadedTranscripts: updatedDownloads });
+
+        if (wasFirstDownload) {
+          await grantAchievement(user.uid, 'first_transcript_download');
+        }
+      }
+    }
+
     const blob = new Blob([rawTranscript], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getNewsArticleById, toggleLike, deleteNewsArticle } from '../services/newsService';
 import { useAuth } from '../hooks/useAuth';
+import { grantAchievement } from '../services/achievementService';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 import type { NewsArticle } from '../types';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 
@@ -26,8 +28,25 @@ export const NewsDetailPage: React.FC = () => {
   };
 
   useEffect(() => {
+    const markAsReadAndGrantAchievement = async () => {
+      if (user && newsId) {
+        const userProfile = await getUserProfile(user.uid);
+        if (userProfile && !userProfile.readNews?.includes(newsId)) {
+          const wasFirstNews = (userProfile.readNews?.length || 0) === 0;
+          
+          const updatedReadNews = [...(userProfile.readNews || []), newsId];
+          await updateUserProfile(user.uid, { readNews: updatedReadNews });
+
+          if (wasFirstNews) {
+            await grantAchievement(user.uid, 'first_news_read');
+          }
+        }
+      }
+    };
+
     fetchArticle();
-  }, [newsId]);
+    markAsReadAndGrantAchievement();
+  }, [newsId, user]);
 
   const handleLike = async () => {
     if (!user || !newsId) return;

@@ -3,6 +3,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { askLessonTutor } from '../services/geminiService';
 import type { ChatMessage } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { grantAchievement } from '../services/achievementService';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 import { SendIcon } from './icons/SendIcon';
 import { LoadingSpinner } from './icons/LoadingSpinner';
 
@@ -43,6 +45,14 @@ export const AiTutorChat: React.FC<AiTutorChatProps> = ({ transcript }) => {
       if (!user) {
         throw new Error('Usuário não autenticado.');
       }
+
+      // Conquista: Primeira interação com o tutor de IA
+      const userProfile = await getUserProfile(user.uid);
+      if (userProfile && !userProfile.hasInteractedWithAITutor) {
+        await updateUserProfile(user.uid, { hasInteractedWithAITutor: true });
+        await grantAchievement(user.uid, 'first_ai_tutor_interaction');
+      }
+
       const token = await user.getIdToken();
       const aiResponse = await askLessonTutor(input, transcript, token);
       const modelMessage: ChatMessage = { role: 'model', content: aiResponse };

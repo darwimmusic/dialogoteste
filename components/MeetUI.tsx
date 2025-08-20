@@ -11,6 +11,9 @@ import { Controls } from './Controls';
 import { VolumeIndicator } from './VolumeIndicator';
 import { ref, set, onDisconnect, serverTimestamp, update, onValue } from 'firebase/database';
 import { rtdb } from '../services/firebase';
+import { useAuth } from '../hooks/useAuth';
+import { grantAchievement } from '../services/achievementService';
+import { getUserProfile, updateUserProfile } from '../services/userService';
 
 interface MeetUIProps {
   appId: string;
@@ -92,6 +95,19 @@ export const MeetUI: React.FC<MeetUIProps> = ({ appId, channelName, token, uid, 
       };
       await set(participantRef, presenceData);
       onDisconnect(participantRef).remove();
+
+      // Conquista: Primeira aula ao vivo
+      const userProfile = await getUserProfile(uid);
+      if (userProfile && !userProfile.attendedLiveSessions?.includes(channelName)) {
+        const wasFirstSession = (userProfile.attendedLiveSessions?.length || 0) === 0;
+
+        const updatedSessions = [...(userProfile.attendedLiveSessions || []), channelName];
+        await updateUserProfile(uid, { attendedLiveSessions: updatedSessions });
+
+        if (wasFirstSession) {
+          await grantAchievement(uid, 'first_live_lesson_watched');
+        }
+      }
     };
 
     joinChannel().catch(console.error);

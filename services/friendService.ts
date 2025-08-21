@@ -13,9 +13,24 @@ import {
   getDoc,
 } from 'firebase/firestore';
 import { auth } from './firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import type { UserProfile } from '../types';
 
 const db = getFirestore();
+
+// Função auxiliar para garantir que o usuário esteja autenticado
+const getAuthenticatedUser = (): Promise<User> => {
+  return new Promise((resolve, reject) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      if (user) {
+        resolve(user);
+      } else {
+        reject(new Error("Usuário não autenticado."));
+      }
+    }, reject);
+  });
+};
 
 // --- Tipos de Dados ---
 export interface FriendRequest {
@@ -62,8 +77,8 @@ export const findUserByDisplayName = async (displayName: string): Promise<UserPr
  * @param receiverUid O UID do usuário que receberá o pedido.
  */
 export const sendFriendRequest = async (receiverUid: string): Promise<void> => {
-  const currentUser = auth.currentUser;
-  if (!currentUser || currentUser.uid === receiverUid) return;
+  const currentUser = await getAuthenticatedUser();
+  if (currentUser.uid === receiverUid) return;
 
   const requestRef = doc(db, `users/${receiverUid}/friendRequests/${currentUser.uid}`);
   
@@ -83,23 +98,32 @@ export const sendFriendRequest = async (receiverUid: string): Promise<void> => {
  * @returns Uma função para cancelar a escuta (unsubscribe).
  */
 export const onFriendRequestsUpdate = (callback: (requests: FriendRequest[]) => void): (() => void) => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return () => {};
+  let unsubscribe = () => {};
 
-  const requestsRef = collection(db, `users/${currentUser.uid}/friendRequests`);
-  const q = query(requestsRef);
-
-  return onSnapshot(q, (snapshot) => {
-    const requests = snapshot.docs.map(doc => doc.data() as FriendRequest);
-    callback(requests);
+  getAuthenticatedUser().then(currentUser => {
+    const requestsRef = collection(db, `users/${currentUser.uid}/friendRequests`);
+    const q = query(requestsRef);
+    unsubscribe = onSnapshot(q, (snapshot) => {
+      const requests = snapshot.docs.map(doc => doc.data() as FriendRequest);
+      callback(requests);
+    });
+  }).catch(error => {
+    console.error("Falha ao obter usuário para friend requests update:", error);
+    callback([]);
   });
+
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  };
 };
 
 const friendsServiceUrl = 'https://friends-service-389818864410.us-central1.run.app';
 
 export const acceptFriendRequest = async (sender: FriendRequest): Promise<void> => {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw new Error("Usuário não autenticado.");
+  const currentUser = await getAuthenticatedUser();
+  const token = await currentUser.getIdToken();
 
   const response = await fetch(`${friendsServiceUrl}/accept-request`, {
     method: 'POST',
@@ -121,9 +145,7 @@ export const acceptFriendRequest = async (sender: FriendRequest): Promise<void> 
  * @param senderId O UID do remetente do pedido.
  */
 export const declineFriendRequest = async (senderId: string): Promise<void> => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return;
-
+  const currentUser = await getAuthenticatedUser();
   const requestRef = doc(db, `users/${currentUser.uid}/friendRequests/${senderId}`);
   await deleteDoc(requestRef);
 };
@@ -132,28 +154,37 @@ export const declineFriendRequest = async (senderId: string): Promise<void> => {
  * Ouve por atualizações na lista de amigos em tempo real.
  */
 export const onFriendsUpdate = (callback: (friends: Friend[]) => void): (() => void) => {
-  const currentUser = auth.currentUser;
-  if (!currentUser) return () => {};
+  let unsubscribe = () => {};
 
-  const friendsRef = collection(db, `users/${currentUser.uid}/friends`);
-  const q = query(friendsRef);
-
-  return onSnapshot(q, (snapshot) => {
-    const friends = snapshot.docs.map(doc => {
-      const data = doc.data() as Omit<Friend, 'uid'>;
-      return {
-        uid: doc.id,       // <-- importante!
-        displayName: data.displayName,
-        photoURL: data.photoURL,
-      };
+  getAuthenticatedUser().then(currentUser => {
+    const friendsRef = collection(db, `users/${currentUser.uid}/friends`);
+    const q = query(friendsRef);
+    unsubscribe = onSnapshot(q, (snapshot) => {
+      const friends = snapshot.docs.map(doc => {
+        const data = doc.data() as Omit<Friend, 'uid'>;
+        return {
+          uid: doc.id,
+          displayName: data.displayName,
+          photoURL: data.photoURL,
+        };
+      });
+      callback(friends);
     });
-    callback(friends);
+  }).catch(error => {
+    console.error("Falha ao obter usuário para friends update:", error);
+    callback([]);
   });
+
+  return () => {
+    if (unsubscribe) {
+      unsubscribe();
+    }
+  };
 };
 
 export const removeFriend = async (friendUid: string): Promise<void> => {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw new Error("Usuário não autenticado.");
+  const currentUser = await getAuthenticatedUser();
+  const token = await currentUser.getIdToken();
 
   const response = await fetch(`${friendsServiceUrl}/remove-friend`, {
     method: 'POST',

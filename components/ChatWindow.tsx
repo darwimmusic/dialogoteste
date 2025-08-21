@@ -3,6 +3,7 @@ import { Friend, ChatMessage } from '../types';
 import { sendMessage, onMessagesUpdate } from '../services/chatService';
 import { useAuth } from '../hooks/useAuth';
 import { SendIcon } from './icons/SendIcon';
+import { LoadingSpinner } from './icons/LoadingSpinner';
 
 interface ChatWindowProps {
   friend: Friend;
@@ -12,16 +13,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ friend }) => {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
   useEffect(() => {
-    const unsubscribe = onMessagesUpdate(friend.uid, setMessages);
+    setIsLoading(true);
+    const unsubscribe = onMessagesUpdate(friend.uid, (loadedMessages) => {
+      setMessages(loadedMessages);
+      setIsLoading(false);
+    });
     return () => unsubscribe();
   }, [friend.uid]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!isLoading) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,16 +53,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ friend }) => {
 
       {/* Área de Mensagens */}
       <div className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-4">
-          {messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.authorId !== user?.uid ? 'justify-start' : 'justify-end'}`}>
-              <div className={`px-3 py-2 rounded-lg max-w-xs ${msg.authorId !== user?.uid ? 'bg-gray-700' : 'bg-purple-600'}`}>
-                <p className="text-sm text-white">{msg.text}</p>
+        {isLoading ? (
+          <div className="flex justify-center items-center h-full">
+            <LoadingSpinner />
+          </div>
+        ) : messages.length > 0 ? (
+          <div className="space-y-4">
+            {messages.map(msg => (
+              <div key={msg.id} className={`flex ${msg.authorId !== user?.uid ? 'justify-start' : 'justify-end'}`}>
+                <div className={`px-3 py-2 rounded-lg max-w-xs ${msg.authorId !== user?.uid ? 'bg-gray-700' : 'bg-purple-600'}`}>
+                  <p className="text-sm text-white">{msg.text}</p>
+                </div>
               </div>
-            </div>
-          ))}
-          <div ref={messagesEndRef} />
-        </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        ) : (
+          <div className="flex justify-center items-center h-full">
+            <p className="text-gray-400">Seja o primeiro a enviar uma mensagem!</p>
+          </div>
+        )}
       </div>
 
       {/* Input de Mensagem */}

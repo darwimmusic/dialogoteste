@@ -1,4 +1,4 @@
-import { getDatabase, ref, push, onValue, serverTimestamp, query, orderByChild, get } from 'firebase/database';
+import { getDatabase, ref, push, onValue, serverTimestamp, query, orderByChild, get, set } from 'firebase/database';
 import { auth } from './firebase';
 import { ChatMessage } from '../types';
 
@@ -10,10 +10,23 @@ const getChatId = (uid1: string, uid2: string): string => {
 };
 
 const initiateChat = async (friendUid: string): Promise<void> => {
-  const token = await auth.currentUser?.getIdToken();
-  if (!token) throw new Error("Usuário não autenticado.");
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error("Usuário não autenticado.");
 
-  const response = await fetch(`${friendsServiceUrl}/initiate-chat`, {
+  const chatId = getChatId(currentUser.uid, friendUid);
+  const chatRef = ref(db, `chats/${chatId}`);
+
+  // Cria o chat no Realtime Database com participants já definidos
+  await set(chatRef, {
+    participants: {
+      [currentUser.uid]: true,
+      [friendUid]: true
+    }
+  });
+
+  // Também chama o backend do Cloud Run, se necessário
+  const token = await currentUser.getIdToken();
+  await fetch(`${friendsServiceUrl}/initiate-chat`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -21,17 +34,9 @@ const initiateChat = async (friendUid: string): Promise<void> => {
     },
     body: JSON.stringify({ friendUid })
   });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    // Status 200 (já existe) e 201 (criado) são considerados sucesso aqui.
-    if (response.status !== 200 && response.status !== 201) {
-       throw new Error(errorData.error || "Falha ao iniciar o chat.");
-    }
-  }
 };
 
-// Adiciona uma função de espera simples
+// Função de delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const sendMessage = async (friendUid: string, messageText: string): Promise<void> => {
@@ -49,24 +54,20 @@ export const sendMessage = async (friendUid: string, messageText: string): Promi
   };
 
   try {
-    // Primeira tentativa de envio
     const chatSnapshot = await get(chatRef);
-    if (!chatSnapshot.exists()) {
+    if (!chatSnapshot.exists() || !chatSnapshot.child('participants').exists()) {
       await initiateChat(friendUid);
-      // Uma pequena espera para permitir que a criação do chat se propague
-      await delay(1000); 
+      await delay(500); // pequena espera para propagação
     }
     await push(messagesRef, messagePayload);
   } catch (error) {
     console.warn("Primeira tentativa de envio falhou. Tentando novamente após uma pausa.", error);
-    // Se a primeira tentativa falhar (provavelmente por permissão),
-    // esperamos um pouco mais e tentamos novamente.
-    await delay(2000); // Espera adicional para garantir a propagação das regras
+    await delay(1000);
     try {
       await push(messagesRef, messagePayload);
     } catch (finalError) {
       console.error("Erro final ao enviar mensagem após nova tentativa:", finalError);
-      throw finalError; // Lança o erro final se a segunda tentativa também falhar
+      throw finalError;
     }
   }
 };

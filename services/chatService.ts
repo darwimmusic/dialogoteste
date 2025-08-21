@@ -81,15 +81,16 @@ export const onMessagesUpdate = (friendUid: string, callback: (messages: ChatMes
   const messagesQuery = query(messagesRef, orderByChild('timestamp'));
 
   return onValue(messagesQuery, (snapshot) => {
-    const messagesData = snapshot.val();
-    if (messagesData) {
-      const messages = Object.entries(messagesData).map(([id, data]) => ({
-        id,
-        ...(data as Omit<ChatMessage, 'id'>),
-      }));
-      callback(messages);
-    } else {
-      callback([]);
-    }
+    const messages: ChatMessage[] = [];
+    snapshot.forEach((childSnap) => {
+      const data = childSnap.val();
+      messages.push({
+        id: childSnap.key!, // pega a chave gerada pelo push
+        authorId: data.authorId,
+        text: data.text,
+        timestamp: data.timestamp,
+      });
+    });
+    callback(messages);
   });
 };

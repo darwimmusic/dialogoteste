@@ -128,7 +128,7 @@ export interface FriendRequest {
 
 export interface ChatMessage {
   id?: string;
-  senderId: string;
+  authorId: string;
   text: string;
   timestamp: any;
 }

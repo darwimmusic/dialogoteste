@@ -47,8 +47,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ friend }) => {
       <div className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-4">
           {messages.map(msg => (
-            <div key={msg.id} className={`flex ${msg.senderId !== user?.uid ? 'justify-start' : 'justify-end'}`}>
-              <div className={`px-3 py-2 rounded-lg max-w-xs ${msg.senderId !== user?.uid ? 'bg-gray-700' : 'bg-purple-600'}`}>
+            <div key={msg.id} className={`flex ${msg.authorId !== user?.uid ? 'justify-start' : 'justify-end'}`}>
+              <div className={`px-3 py-2 rounded-lg max-w-xs ${msg.authorId !== user?.uid ? 'bg-gray-700' : 'bg-purple-600'}`}>
                 <p className="text-sm text-white">{msg.text}</p>
               </div>
             </div>

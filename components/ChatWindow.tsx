@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { Friend, ChatMessage } from '../types';
 import { sendMessage, onMessagesUpdate } from '../services/chatService';
 import { useAuth } from '../hooks/useAuth';
@@ -46,9 +47,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ friend }) => {
   return (
     <div className="h-full flex flex-col">
       {/* Cabeçalho do Chat */}
-      <header className="p-4 border-b border-gray-700 flex items-center gap-3">
-        <img src={friend.photoURL || '/default-avatar.png'} alt={friend.displayName} className="w-10 h-10 rounded-full" />
-        <h2 className="font-semibold text-lg">{friend.displayName}</h2>
+      <header className="p-4 border-b border-gray-700">
+        <Link to={`/profile/${friend.uid}`} className="flex items-center gap-3 group">
+          <img src={friend.photoURL || '/default-avatar.png'} alt={friend.displayName} className="w-10 h-10 rounded-full group-hover:ring-2 group-hover:ring-purple-500 transition-all" />
+          <h2 className="font-semibold text-lg group-hover:text-purple-400 transition-colors">{friend.displayName}</h2>
+        </Link>
       </header>
 
       {/* Área de Mensagens */}

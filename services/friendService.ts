@@ -151,7 +151,7 @@ export const declineFriendRequest = async (senderId: string): Promise<void> => {
 };
 
 /**
- * Ouve por atualizações na lista de amigos em tempo real.
+ * Ouve por atualizações na lista de amigos em tempo real, buscando os perfis completos.
  */
 export const onFriendsUpdate = (callback: (friends: Friend[]) => void): (() => void) => {
   let unsubscribe = () => {};
@@ -159,15 +159,32 @@ export const onFriendsUpdate = (callback: (friends: Friend[]) => void): (() => v
   getAuthenticatedUser().then(currentUser => {
     const friendsRef = collection(db, `users/${currentUser.uid}/friends`);
     const q = query(friendsRef);
-    unsubscribe = onSnapshot(q, (snapshot) => {
-      const friends = snapshot.docs.map(doc => {
-        const data = doc.data() as Omit<Friend, 'uid'>;
-        return {
-          uid: doc.id,
-          displayName: data.displayName,
-          photoURL: data.photoURL,
-        };
+    
+    unsubscribe = onSnapshot(q, async (snapshot) => {
+      if (snapshot.empty) {
+        callback([]);
+        return;
+      }
+
+      const friendPromises = snapshot.docs.map(friendDoc => {
+        const friendId = friendDoc.id;
+        const userProfileRef = doc(db, 'users', friendId);
+        return getDoc(userProfileRef);
       });
+
+      const friendDocs = await Promise.all(friendPromises);
+
+      const friends: Friend[] = friendDocs
+        .filter(docSnap => docSnap.exists())
+        .map(docSnap => {
+          const data = docSnap.data() as UserProfile;
+          return {
+            uid: docSnap.id,
+            displayName: data.displayName,
+            photoURL: data.photoURL,
+          };
+        });
+      
       callback(friends);
     });
   }).catch(error => {

@@ -3,6 +3,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Header } from './components/Header';
+import { UserProfile } from './types';
 import { DashboardPage } from './pages/DashboardPage';
 import { LessonPlayerPage } from './pages/LessonPlayerPage';
 import { ForumPage } from './pages/ForumPage';
@@ -21,7 +22,7 @@ import { NotificationProvider } from './contexts/NotificationContext';
 import SocialPage from './pages/SocialPage';
 
 function App() {
-  const { user, isAdmin, loading } = useAuth();
+  const { user, userProfile, isAdmin, loading } = useAuth();
 
   if (loading) {
     return <div className="min-h-screen bg-[#181818] flex justify-center items-center"><LoadingSpinner /></div>;
@@ -31,7 +32,7 @@ function App() {
     <Router>
       <NotificationProvider>
         <div className="min-h-screen bg-[#181818] text-gray-100 font-sans">
-          {user && <Header />}
+          {user && <Header userProfile={userProfile} isAdmin={isAdmin} />}
           <main>
             <Routes>
               {!user && <Route path="*" element={<LoginPage />} />}

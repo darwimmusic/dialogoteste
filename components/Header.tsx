@@ -2,9 +2,9 @@
 
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
 import { signOutUser } from '../services/authService';
 import { doc } from 'firebase/firestore';
+import { UserProfile } from '../types';
 import { useDocumentData } from 'react-firebase-hooks/firestore';
 import { db } from '../services/firebase';
 import { HomeIcon } from './icons/HomeIcon';
@@ -13,9 +13,14 @@ import { LiveIcon } from './icons/LiveIcon';
 import { NewsIcon } from './icons/NewsIcon';
 import SocialIcon from './icons/SocialIcon';
 import { UserIcon } from './icons/UserIcon'; // Adicionado para consistência
+import { useAuth } from '../hooks/useAuth';
 
-export const Header: React.FC = () => {
-  const { user, isAdmin } = useAuth();
+interface HeaderProps {
+  userProfile: UserProfile | null;
+  isAdmin: boolean;
+}
+
+export const Header: React.FC<HeaderProps> = ({ userProfile, isAdmin }) => {
   const liveSessionRef = doc(db, 'liveSessions', 'current');
   const [liveSessionData] = useDocumentData(liveSessionRef);
 
@@ -79,10 +84,10 @@ export const Header: React.FC = () => {
           <div className="flex items-center gap-4">
             {/* O ícone do perfil agora é um Link para a página de perfil */}
             <Link to="/profile">
-              {user?.photoURL ? (
+              {userProfile?.photoURL ? (
                 <img
                   className="h-9 w-9 rounded-full ring-2 ring-offset-2 ring-offset-gray-800 ring-purple-500"
-                  src={user.photoURL}
+                  src={userProfile.photoURL}
                   alt="User profile"
                 />
               ) : (

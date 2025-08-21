@@ -1,11 +1,34 @@
-import { getDatabase, ref, push, onValue, serverTimestamp, query, orderByChild, get, update } from 'firebase/database';
+import { getDatabase, ref, push, onValue, serverTimestamp, query, orderByChild, get } from 'firebase/database';
 import { auth } from './firebase';
 import { ChatMessage } from '../types';
 
 const db = getDatabase();
+const friendsServiceUrl = 'https://friends-service-389818864410.us-central1.run.app';
 
 const getChatId = (uid1: string, uid2: string): string => {
   return [uid1, uid2].sort().join('_');
+};
+
+const initiateChat = async (friendUid: string): Promise<void> => {
+  const token = await auth.currentUser?.getIdToken();
+  if (!token) throw new Error("Usuário não autenticado.");
+
+  const response = await fetch(`${friendsServiceUrl}/initiate-chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ friendUid })
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    // Status 200 (já existe) e 201 (criado) são considerados sucesso aqui.
+    if (response.status !== 200 && response.status !== 201) {
+       throw new Error(errorData.error || "Falha ao iniciar o chat.");
+    }
+  }
 };
 
 export const sendMessage = async (friendUid: string, messageText: string): Promise<void> => {
@@ -16,24 +39,12 @@ export const sendMessage = async (friendUid: string, messageText: string): Promi
   const chatRef = ref(db, `chats/${chatId}`);
   const chatSnapshot = await get(chatRef);
 
-  // Se o chat não existir, crie-o primeiro.
+  // Se o chat não existir, delega a criação para o backend.
   if (!chatSnapshot.exists()) {
-    const chatData = {
-      participants: {
-        [currentUser.uid]: true,
-        [friendUid]: true,
-      },
-      createdAt: serverTimestamp(),
-    };
-    // Cria o chat e os índices de usuário em uma operação atômica
-    const updates: { [key: string]: any } = {};
-    updates[`chats/${chatId}`] = chatData;
-    updates[`userChats/${currentUser.uid}/${chatId}`] = true;
-    updates[`userChats/${friendUid}/${chatId}`] = true;
-    await update(ref(db), updates);
+    await initiateChat(friendUid);
   }
 
-  // Agora que o chat garantidamente existe, envie a mensagem.
+  // Agora que o backend garantiu a existência do chat, envia a mensagem.
   const messagesRef = ref(db, `messages/${chatId}`);
   await push(messagesRef, {
     authorId: currentUser.uid,

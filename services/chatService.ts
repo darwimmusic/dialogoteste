@@ -31,26 +31,44 @@ const initiateChat = async (friendUid: string): Promise<void> => {
   }
 };
 
+// Adiciona uma função de espera simples
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const sendMessage = async (friendUid: string, messageText: string): Promise<void> => {
   const currentUser = auth.currentUser;
   if (!currentUser || !messageText.trim()) return;
 
   const chatId = getChatId(currentUser.uid, friendUid);
   const chatRef = ref(db, `chats/${chatId}`);
-  const chatSnapshot = await get(chatRef);
-
-  // Se o chat não existir, delega a criação para o backend.
-  if (!chatSnapshot.exists()) {
-    await initiateChat(friendUid);
-  }
-
-  // Agora que o backend garantiu a existência do chat, envia a mensagem.
   const messagesRef = ref(db, `messages/${chatId}`);
-  await push(messagesRef, {
+  
+  const messagePayload = {
     authorId: currentUser.uid,
     text: messageText,
     timestamp: serverTimestamp(),
-  });
+  };
+
+  try {
+    // Primeira tentativa de envio
+    const chatSnapshot = await get(chatRef);
+    if (!chatSnapshot.exists()) {
+      await initiateChat(friendUid);
+      // Uma pequena espera para permitir que a criação do chat se propague
+      await delay(1000); 
+    }
+    await push(messagesRef, messagePayload);
+  } catch (error) {
+    console.warn("Primeira tentativa de envio falhou. Tentando novamente após uma pausa.", error);
+    // Se a primeira tentativa falhar (provavelmente por permissão),
+    // esperamos um pouco mais e tentamos novamente.
+    await delay(2000); // Espera adicional para garantir a propagação das regras
+    try {
+      await push(messagesRef, messagePayload);
+    } catch (finalError) {
+      console.error("Erro final ao enviar mensagem após nova tentativa:", finalError);
+      throw finalError; // Lança o erro final se a segunda tentativa também falhar
+    }
+  }
 };
 
 export const onMessagesUpdate = (friendUid: string, callback: (messages: ChatMessage[]) => void): (() => void) => {

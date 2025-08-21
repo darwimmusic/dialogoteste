@@ -63,15 +63,12 @@ const FriendList: React.FC<{ onStartChat: (friend: Friend) => void }> = ({ onSta
     }
   }, [user]);
 
-  // Adicionado para depuração
-  console.log('Dados dos amigos:', friends);
-
   return (
     <div className="p-4">
       {friends.length > 0 ? (
         <ul className="space-y-2">
-          {friends.map(friend => (
-            <li key={friend.uid} onClick={() => onStartChat(friend)} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700 cursor-pointer">
+          {friends.map((friend, index) => (
+            <li key={friend.uid || `friend-${index}`} onClick={() => onStartChat(friend)} className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-700 cursor-pointer">
               <img src={friend.photoURL || '/default-avatar.png'} alt={friend.displayName} className="w-10 h-10 rounded-full" />
               <span className="font-medium">{friend.displayName}</span>
             </li>
@@ -107,8 +104,8 @@ const FriendRequests: React.FC = () => {
     <div className="p-4">
       {requests.length > 0 ? (
         <ul className="space-y-3">
-          {requests.map(req => (
-            <li key={req.senderId} className="flex items-center justify-between p-2 rounded-md bg-gray-800">
+          {requests.map((req, index) => (
+            <li key={req.senderId || `request-${index}`} className="flex items-center justify-between p-2 rounded-md bg-gray-800">
               <div className="flex items-center gap-3">
                 <img src={req.photoURL || '/default-avatar.png'} alt={req.displayName} className="w-10 h-10 rounded-full" />
                 <span className="font-medium">{req.displayName}</span>

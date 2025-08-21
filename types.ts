@@ -38,7 +38,7 @@ export interface UserProfile {
   createdAt: any; // ou um tipo mais específico se você usar Timestamps
 }
 
-export interface ChatMessage {
+export interface AiTutorChatMessage {
   role: 'user' | 'model';
   content: string;
 }
@@ -126,9 +126,9 @@ export interface FriendRequest {
   timestamp: any; // Firestore Timestamp
 }
 
-export interface UserChatMessage {
+export interface ChatMessage {
   id?: string;
   senderId: string;
   text: string;
-  timestamp: any; // Firestore Timestamp
+  timestamp: any;
 }

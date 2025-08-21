@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { askLessonTutor } from '../services/geminiService';
-import type { ChatMessage } from '../types';
+import type { AiTutorChatMessage } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { grantAchievement } from '../services/achievementService';
 import { getUserProfile, updateUserProfile } from '../services/userService';
@@ -13,7 +13,7 @@ interface AiTutorChatProps {
 }
 
 export const AiTutorChat: React.FC<AiTutorChatProps> = ({ transcript }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<AiTutorChatMessage[]>([
     {
       role: 'model',
       content: 'Olá! Eu sou seu tutor de IA. Faça qualquer pergunta sobre esta aula.',
@@ -36,7 +36,7 @@ export const AiTutorChat: React.FC<AiTutorChatProps> = ({ transcript }) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: input };
+    const userMessage: AiTutorChatMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
@@ -55,10 +55,10 @@ export const AiTutorChat: React.FC<AiTutorChatProps> = ({ transcript }) => {
 
       const token = await user.getIdToken();
       const aiResponse = await askLessonTutor(input, transcript, token);
-      const modelMessage: ChatMessage = { role: 'model', content: aiResponse };
+      const modelMessage: AiTutorChatMessage = { role: 'model', content: aiResponse };
       setMessages((prev) => [...prev, modelMessage]);
     } catch (error) {
-      const errorMessage: ChatMessage = {
+      const errorMessage: AiTutorChatMessage = {
         role: 'model',
         content: 'Ocorreu um erro. Por favor, tente novamente.',
       };

@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Friend, UserChatMessage } from '../types';
+import { Friend, ChatMessage } from '../types';
 import { sendMessage, onMessagesUpdate } from '../services/chatService';
 import { useAuth } from '../hooks/useAuth';
 import { SendIcon } from './icons/SendIcon';
 
 interface ChatWindowProps {
   friend: Friend;
-  onClose: () => void;
 }
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ friend, onClose }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ friend }) => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<UserChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -37,15 +36,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ friend, onClose }) => {
   };
 
   return (
-    <div className="fixed bottom-0 right-0 mb-4 mr-4 w-80 h-96 bg-gray-800 border border-gray-700 rounded-lg shadow-lg flex flex-col z-30">
-      <header className="bg-gray-900 p-3 flex items-center justify-between rounded-t-lg">
-        <div className="flex items-center gap-3">
-          <img src={friend.photoURL || '/default-avatar.png'} alt={friend.displayName} className="w-8 h-8 rounded-full" />
-          <h2 className="font-semibold text-white">{friend.displayName}</h2>
-        </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl font-bold">&times;</button>
+    <div className="h-full flex flex-col">
+      {/* Cabeçalho do Chat */}
+      <header className="p-4 border-b border-gray-700 flex items-center gap-3">
+        <img src={friend.photoURL || '/default-avatar.png'} alt={friend.displayName} className="w-10 h-10 rounded-full" />
+        <h2 className="font-semibold text-lg">{friend.displayName}</h2>
       </header>
-      
+
+      {/* Área de Mensagens */}
       <div className="flex-1 p-4 overflow-y-auto">
         <div className="space-y-4">
           {messages.map(msg => (
@@ -59,16 +57,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ friend, onClose }) => {
         </div>
       </div>
 
-      <footer className="p-2 border-t border-gray-700">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+      {/* Input de Mensagem */}
+      <footer className="p-4 border-t border-gray-700">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-3">
           <input
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             placeholder="Digite sua mensagem..."
-            className="w-full bg-gray-700 text-white rounded-md p-2 border border-gray-600 focus:ring-purple-500 focus:border-purple-500"
+            className="w-full bg-gray-800 text-white rounded-full py-2 px-4 focus:outline-none focus:ring-2 focus:ring-purple-500"
           />
-          <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-2 rounded-full">
+          <button type="submit" className="bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-full">
             <SendIcon />
           </button>
         </form>

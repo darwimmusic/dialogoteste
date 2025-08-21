@@ -1,84 +1,65 @@
-import {
-  getFirestore,
-  collection,
-  doc,
-  addDoc,
-  query,
-  orderBy,
-  onSnapshot,
-  Timestamp,
-  serverTimestamp,
-} from 'firebase/firestore';
+import { getDatabase, ref, push, onValue, serverTimestamp, query, orderByChild, get, update } from 'firebase/database';
 import { auth } from './firebase';
+import { ChatMessage } from '../types';
 
-const db = getFirestore();
+const db = getDatabase();
 
-// --- Tipos de Dados ---
-export interface ChatMessage {
-  id?: string;
-  senderId: string;
-  text: string;
-  timestamp: Timestamp;
-}
-
-// --- Funções do Serviço ---
-
-/**
- * Gera um ID de chat consistente para dois usuários, ordenando os UIDs.
- * Isso garante que ambos os usuários acessem o mesmo documento de chat.
- * @param uid1 UID do primeiro usuário.
- * @param uid2 UID do segundo usuário.
- * @returns O ID combinado e ordenado (ex: "uid_abc_uid_xyz").
- */
 const getChatId = (uid1: string, uid2: string): string => {
   return [uid1, uid2].sort().join('_');
 };
 
-/**
- * Envia uma mensagem para um amigo.
- * @param friendUid O UID do amigo para quem a mensagem será enviada.
- * @param messageText O conteúdo da mensagem.
- */
 export const sendMessage = async (friendUid: string, messageText: string): Promise<void> => {
   const currentUser = auth.currentUser;
   if (!currentUser || !messageText.trim()) return;
 
   const chatId = getChatId(currentUser.uid, friendUid);
-  const messagesRef = collection(db, `chats/${chatId}/messages`);
+  const chatRef = ref(db, `chats/${chatId}`);
+  const chatSnapshot = await get(chatRef);
 
-  await addDoc(messagesRef, {
-    senderId: currentUser.uid,
+  // Se o chat não existir, crie-o primeiro.
+  if (!chatSnapshot.exists()) {
+    const chatData = {
+      participants: {
+        [currentUser.uid]: true,
+        [friendUid]: true,
+      },
+      createdAt: serverTimestamp(),
+    };
+    // Cria o chat e os índices de usuário em uma operação atômica
+    const updates: { [key: string]: any } = {};
+    updates[`chats/${chatId}`] = chatData;
+    updates[`userChats/${currentUser.uid}/${chatId}`] = true;
+    updates[`userChats/${friendUid}/${chatId}`] = true;
+    await update(ref(db), updates);
+  }
+
+  // Agora que o chat garantidamente existe, envie a mensagem.
+  const messagesRef = ref(db, `messages/${chatId}`);
+  await push(messagesRef, {
+    authorId: currentUser.uid,
     text: messageText,
     timestamp: serverTimestamp(),
   });
 };
 
-/**
- * Ouve por novas mensagens em um chat em tempo real.
- * @param friendUid O UID do amigo.
- * @param callback Função a ser chamada com a lista de mensagens atualizada.
- * @returns Uma função para cancelar a escuta (unsubscribe).
- */
 export const onMessagesUpdate = (friendUid: string, callback: (messages: ChatMessage[]) => void): (() => void) => {
   const currentUser = auth.currentUser;
   if (!currentUser) return () => {};
 
   const chatId = getChatId(currentUser.uid, friendUid);
-  const messagesRef = collection(db, `chats/${chatId}/messages`);
-  const q = query(messagesRef, orderBy('timestamp', 'asc'));
+  const messagesRef = ref(db, `messages/${chatId}`);
+  const messagesQuery = query(messagesRef, orderByChild('timestamp'));
 
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as ChatMessage[];
-    callback(messages);
+  return onValue(messagesQuery, (snapshot) => {
+    const messagesData = snapshot.val();
+    if (messagesData) {
+      const messages = Object.entries(messagesData).map(([id, data]) => ({
+        id,
+        ...(data as Omit<ChatMessage, 'id'>),
+      }));
+      callback(messages);
+    } else {
+      callback([]);
+    }
   });
 };
-
-// Funções para 'messageRequests' podem ser adicionadas aqui seguindo um padrão
-// similar ao de 'friendRequests' no friendService.ts. Por exemplo:
-// - sendInitialMessageRequest(receiverUid, message)
-// - onMessageRequestsUpdate(callback)
-// - acceptMessageRequest(requestId)
-// - declineMessageRequest(requestId)

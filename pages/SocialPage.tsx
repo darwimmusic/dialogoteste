@@ -17,7 +17,7 @@ const SocialPage: React.FC = () => {
       {/* Coluna da Direita: Janela de Chat */}
       <div className="w-2/3 flex flex-col">
         {activeChatFriend ? (
-          <ChatWindow friend={activeChatFriend} />
+          <ChatWindow key={activeChatFriend.uid} friend={activeChatFriend} />
         ) : (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-400">Selecione um amigo para começar a conversar.</p>

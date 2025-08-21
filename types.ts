@@ -130,5 +130,5 @@ export interface ChatMessage {
   id?: string;
   authorId: string;
   text: string;
-  timestamp: any;
+  timestamp: number;
 }

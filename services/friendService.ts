@@ -139,7 +139,14 @@ export const onFriendsUpdate = (callback: (friends: Friend[]) => void): (() => v
   const q = query(friendsRef);
 
   return onSnapshot(q, (snapshot) => {
-    const friends = snapshot.docs.map(doc => doc.data() as Friend);
+    const friends = snapshot.docs.map(doc => {
+      const data = doc.data() as Omit<Friend, 'uid'>;
+      return {
+        uid: doc.id,       // <-- importante!
+        displayName: data.displayName,
+        photoURL: data.photoURL,
+      };
+    });
     callback(friends);
   });
 };

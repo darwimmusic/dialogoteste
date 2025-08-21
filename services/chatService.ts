@@ -84,11 +84,16 @@ export const onMessagesUpdate = (friendUid: string, callback: (messages: ChatMes
     const messages: ChatMessage[] = [];
     snapshot.forEach((childSnap) => {
       const data = childSnap.val();
+      // O timestamp do Realtime Database pode ser um objeto com toMillis() ou um número
+      const timestampInMillis = typeof data.timestamp === 'object' && data.timestamp.toMillis
+        ? data.timestamp.toMillis()
+        : data.timestamp;
+
       messages.push({
-        id: childSnap.key!, // pega a chave gerada pelo push
+        id: childSnap.key!,
         authorId: data.authorId,
         text: data.text,
-        timestamp: data.timestamp,
+        timestamp: timestampInMillis,
       });
     });
     callback(messages);

@@ -79,6 +79,7 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
       title: data.title || 'Ferro',
       completedCourses: data.completedCourses || [],
       badges: data.badges || [],
+      achievements: data.achievements || [], // Garante que achievements seja sempre um array
       isAdmin: data.isAdmin || false,
       createdAt: data.createdAt || new Date(),
       ...data,

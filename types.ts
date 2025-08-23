@@ -9,6 +9,11 @@ export interface StandardAchievement extends Badge {
   xp: number;
 }
 
+export interface UserAchievement {
+  id: string; // ID da StandardAchievement
+  awardedAt: any; // Firestore Timestamp
+}
+
 export interface UserProfile {
   uid: string;
   displayName: string;
@@ -34,6 +39,7 @@ export interface UserProfile {
   attendedLiveSessions?: string[]; // Array de IDs de sessões ao vivo
   hasSentLiveChatMessage?: boolean;
   badges: Badge[];
+  achievements?: UserAchievement[]; // Conquistas que o usuário ganhou
   isAdmin: boolean;
   createdAt: any; // ou um tipo mais específico se você usar Timestamps
 }

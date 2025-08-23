@@ -1,7 +1,8 @@
 // src/App.tsx - Roteamento Final
 
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { logPageView } from './services/analyticsService';
 import { Header } from './components/Header';
 import { UserProfile } from './types';
 import { DashboardPage } from './pages/DashboardPage';
@@ -21,6 +22,18 @@ import { LoadingSpinner } from './components/icons/LoadingSpinner';
 import { NotificationProvider } from './contexts/NotificationContext';
 import SocialPage from './pages/SocialPage';
 
+// Componente para rastrear visualizações de página
+const AnalyticsTracker = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    // O título pode ser melhorado no futuro para ser dinâmico
+    logPageView(document.title, location.pathname + location.search);
+  }, [location]);
+
+  return null;
+};
+
 function App() {
   const { user, userProfile, isAdmin, loading } = useAuth();
 
@@ -30,6 +43,7 @@ function App() {
 
   return (
     <Router>
+      <AnalyticsTracker />
       <NotificationProvider>
         <div className="min-h-screen bg-[#181818] text-gray-100 font-sans">
           {user && <Header userProfile={userProfile} isAdmin={isAdmin} />}

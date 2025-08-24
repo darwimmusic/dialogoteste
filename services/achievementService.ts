@@ -3,11 +3,10 @@ import {
   doc,
   getDoc,
   updateDoc,
-  increment,
   arrayUnion,
 } from "firebase/firestore";
 import type { UserProfile, StandardAchievement, Badge } from "../types";
-import { getUserProfile } from "./userService";
+import { getUserProfile, addXp } from "./userService"; // Importa addXp
 import eventEmitter from "../utils/eventEmitter";
 
 const db = getFirestore();
@@ -29,29 +28,22 @@ export const grantAchievement = async (
     return false;
   }
 
-  // 1. Verifica se o usuário já possui a conquista
   const hasAchievement = userProfile.badges?.some(
     (badge) => badge.id === achievementId
   );
   if (hasAchievement) {
-    console.log(
-      `Usuário ${uid} já possui a conquista ${achievementId}. Nenhuma ação foi tomada.`
-    );
-    return false;
+    return false; // Já tem, não faz nada.
   }
 
-  // 2. Busca os dados da conquista no Firestore
   const achievementRef = doc(db, "standard_achievements", achievementId);
   const achievementSnap = await getDoc(achievementRef);
 
   if (!achievementSnap.exists()) {
-    console.error(`A conquista com ID ${achievementId} não foi encontrada no banco de dados.`);
+    console.error(`A conquista com ID ${achievementId} não foi encontrada.`);
     return false;
   }
 
   const achievement = achievementSnap.data() as StandardAchievement;
-
-  // 3. Prepara a badge para ser adicionada ao perfil do usuário
   const newBadge: Badge = {
     id: achievement.id,
     name: achievement.name,
@@ -59,13 +51,23 @@ export const grantAchievement = async (
     imageUrl: achievement.imageUrl,
   };
 
-  // 4. Atualiza o perfil do usuário
-  const userRef = doc(db, `users/${uid}`);
+  // Lógica para evitar loop de XP em conquistas de elo
+  const isEloAchievement = achievementId.startsWith("elo_");
+
   try {
-    await updateDoc(userRef, {
-      badges: arrayUnion(newBadge),
-      xp: increment(achievement.xp),
-    });
+    if (isEloAchievement) {
+      // Conquistas de elo não concedem XP, apenas a badge.
+      const userRef = doc(db, `users/${uid}`);
+      await updateDoc(userRef, {
+        badges: arrayUnion(newBadge),
+      });
+    } else {
+      // Outras conquistas concedem XP e a badge através da função centralizada.
+      await addXp(uid, achievement.xp, {
+        badges: arrayUnion(newBadge),
+      });
+    }
+    
     console.log(`Conquista "${achievement.name}" concedida ao usuário ${uid}.`);
     eventEmitter.emit('achievementGranted', newBadge);
     return true;

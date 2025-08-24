@@ -130,53 +130,79 @@ export const updateUserProfile = async (uid: string, data: Partial<UserProfile>)
 };
 
 /**
+ * Adiciona XP a um usuário e recalcula seu nível e título em uma única operação.
+ * Esta é a função centralizada para todas as fontes de XP.
+ * @param uid O ID do usuário.
+ * @param xpToAdd A quantidade de XP a ser adicionada.
+ * @param additionalUpdates Um objeto com quaisquer outros campos a serem atualizados atomicamente.
+ */
+export const addXp = async (uid: string, xpToAdd: number, additionalUpdates: object = {}): Promise<void> => {
+  const userRef = doc(db, `users/${uid}`);
+  
+  try {
+    const userProfile = await getUserProfile(uid);
+    if (!userProfile) {
+      throw new Error("Perfil de usuário não encontrado.");
+    }
+
+    const newTotalXp = userProfile.xp + xpToAdd;
+    const newLevel = Math.floor(newTotalXp / XP_TO_LEVEL_UP) + 1;
+
+    const updates: { [key: string]: any } = {
+      ...additionalUpdates,
+      xp: newTotalXp,
+      level: Math.min(newLevel, MAX_LEVEL),
+    };
+
+    if (newLevel > userProfile.level) {
+      const newTitle = getTitleForLevel(updates.level);
+      if (newTitle && newTitle !== userProfile.title) {
+        updates.title = newTitle;
+        const eloAchievementId = `elo_${newTitle.toLowerCase().replace(' ', '_')}`;
+        // Concede a conquista de elo (sem adicionar XP para evitar loop)
+        // Esta chamada agora é segura porque grantAchievement será refatorado.
+        grantAchievement(uid, eloAchievementId); 
+      }
+    }
+
+    await updateDoc(userRef, updates);
+    console.log(`${xpToAdd} XP concedido ao usuário ${uid}. Perfil atualizado.`);
+
+  } catch (error) {
+    console.error(`Erro ao adicionar XP para o usuário ${uid}:`, error);
+  }
+};
+
+
+/**
  * Processa a conclusão de uma aula, adicionando XP e prevenindo repetições.
  * @param uid O ID do usuário.
  * @param lessonId O ID da aula concluída.
  * @returns `true` se o XP foi concedido, `false` se a aula já havia sido concluída.
  */
 export const completeLesson = async (uid: string, lessonId: string): Promise<boolean> => {
-  const userRef = doc(db, `users/${uid}`);
   const userProfile = await getUserProfile(uid);
 
   if (!userProfile || userProfile.level >= MAX_LEVEL) {
-    return false; // Não faz nada se o perfil não existir ou já estiver no nível máximo
+    return false;
   }
 
-  // Verifica se a aula já foi concluída
   if (userProfile.completedLessons?.includes(lessonId)) {
     console.log(`Aula ${lessonId} já concluída pelo usuário ${uid}. Nenhum XP concedido.`);
     return false;
   }
 
-  // Adiciona a aula à lista de concluídas
   const updatedCompletedLessons = [...(userProfile.completedLessons || []), lessonId];
-
-  // Calcula o novo XP total e o novo nível
-  const newTotalXp = userProfile.xp + XP_PER_LESSON;
-  const newLevel = Math.floor(newTotalXp / XP_TO_LEVEL_UP) + 1;
   
-  const updates: { [key: string]: any } = {
-    completedLessons: updatedCompletedLessons,
-    xp: newTotalXp,
-  };
-
-  // Verifica se o usuário subiu de nível
-  if (newLevel > userProfile.level) {
-    updates.level = Math.min(newLevel, MAX_LEVEL);
-    const newTitle = getTitleForLevel(updates.level);
-    
-    if (newTitle && newTitle !== userProfile.title) {
-      updates.title = newTitle;
-      // Concede a conquista de elo
-      const eloAchievementId = `elo_${newTitle.toLowerCase().replace(' ', '_')}`;
-      grantAchievement(uid, eloAchievementId);
-    }
+  try {
+    // Chama a função centralizada para adicionar XP e atualizar o nível
+    await addXp(uid, XP_PER_LESSON, { completedLessons: updatedCompletedLessons });
+    console.log(`Aula ${lessonId} concluída com sucesso pelo usuário ${uid}.`);
+    return true;
+  } catch (error) {
+    console.error(`Falha ao processar a conclusão da aula ${lessonId} para o usuário ${uid}:`, error);
+    return false;
   }
-  
-  await updateDoc(userRef, updates);
-  console.log(`Aula ${lessonId} concluída. ${XP_PER_LESSON} XP concedido ao usuário ${uid}.`);
-  return true;
 };
 
 /**

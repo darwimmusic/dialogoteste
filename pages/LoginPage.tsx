@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { signInWithGoogle, signInWithEmail, signUpWithEmail } from '../services/authService';
 import { GoogleIcon } from '../components/icons/GoogleIcon';
 import { LoadingSpinner } from '../components/icons/LoadingSpinner';
@@ -6,6 +7,7 @@ import { LoadingSpinner } from '../components/icons/LoadingSpinner';
 type FormType = 'login' | 'signup';
 
 export const LoginPage: React.FC = () => {
+  const navigate = useNavigate();
   const [formType, setFormType] = useState<FormType>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,7 +20,7 @@ export const LoginPage: React.FC = () => {
     setError(null);
     try {
       await signInWithGoogle();
-      // Auth state listener in App.tsx will handle redirect
+      navigate('/'); // Redireciona para o dashboard
     } catch (e) {
       setError((e as Error).message);
       setIsLoading(false);
@@ -39,6 +41,7 @@ export const LoginPage: React.FC = () => {
       } else {
         await signInWithEmail(email, password);
       }
+      navigate('/'); // Redireciona para o dashboard
     } catch (e) {
       setError((e as Error).message);
     } finally {

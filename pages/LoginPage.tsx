@@ -53,8 +53,8 @@ export const LoginPage: React.FC = () => {
     <div className="min-h-screen bg-gray-900 flex flex-col justify-center items-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">
-            Comunidade IA
+          <h1 className="text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-indigo-500">
+            d.IA.logo
           </h1>
           <p className="text-gray-400 mt-2">
             {formType === 'login' ? 'Bem-vindo de volta!' : 'Crie sua conta para começar.'}
